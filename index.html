@@ -754,9 +754,9 @@ footer {
     <li><a href="#deploy">Deploy</a></li>
     <li><a href="#interact">Interact</a></li>
   </ul>
-  <div style="display:flex;gap:8px;align-items:center">
-    <button id="connectBtn" onclick="connectWallet()" style="background:transparent;border:1px solid var(--accent);color:var(--accent);padding:8px 16px;font-family:var(--mono);font-size:11px;cursor:pointer;letter-spacing:1px;">MetaMask</button>
-    <button id="connectWCBtn" onclick="connectWalletConnect()" style="background:transparent;border:1px solid var(--accent3);color:var(--accent3);padding:8px 16px;font-family:var(--mono);font-size:11px;cursor:pointer;letter-spacing:1px;">📱 Mobile</button>
+  <div style="display:flex;gap:8px;align-items:center" id="walletBtns">
+    <button id="connectBtn" onclick="handleConnect()" style="background:transparent;border:1px solid var(--accent);color:var(--accent);padding:8px 16px;font-family:var(--mono);font-size:11px;cursor:pointer;letter-spacing:1px;">Connect Wallet</button>
+    <button id="disconnectBtn" onclick="disconnectWallet()" style="display:none;background:transparent;border:1px solid var(--danger);color:var(--danger);padding:8px 16px;font-family:var(--mono);font-size:11px;cursor:pointer;letter-spacing:1px;">Disconnect</button>
   </div>
 </nav>
 
@@ -1148,9 +1148,31 @@ let countdownInterval = null;
 
 // ─── WALLET ──────────────────────────────────────────────────────────────────
 
+// Detect mobile
+function isMobile() {
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
+async function handleConnect() {
+  if (isMobile()) {
+    // On mobile: deep link to MetaMask app
+    const dappUrl = encodeURIComponent(window.location.href);
+    const metamaskUrl = 'https://metamask.app.link/dapp/' + window.location.host + window.location.pathname;
+    showNotification('Opening MetaMask app...', 'info');
+    window.location.href = metamaskUrl;
+    return;
+  }
+  await connectWallet();
+}
+
 async function connectWallet() {
   if (!window.ethereum) {
-    showNotification('MetaMask not detected. Please install MetaMask.', 'error');
+    // If on mobile inside MetaMask browser, ethereum should be injected
+    if (isMobile()) {
+      showNotification('Please open this site inside the MetaMask browser', 'error');
+    } else {
+      showNotification('MetaMask not detected. Please install MetaMask.', 'error');
+    }
     return;
   }
   try {
@@ -1172,38 +1194,33 @@ async function connectWallet() {
       } catch(e) { return; }
     }
 
-    const short = userAddress.slice(0,6) + '...' + userAddress.slice(-4);
-    document.getElementById('connectBtn').textContent = short;
-    document.getElementById('connectBtn').classList.add('connected');
-    showNotification('Wallet connected: ' + short, 'success');
-
+    setConnected(userAddress);
     fetchEthPrice();
   } catch(e) {
     showNotification('Connection failed: ' + e.message, 'error');
   }
 }
 
+function setConnected(address) {
+  userAddress = address;
+  const short = address.slice(0,6) + '...' + address.slice(-4);
+  const btn = document.getElementById('connectBtn');
+  btn.textContent = short;
+  btn.classList.add('connected');
+  btn.style.borderColor = 'var(--accent)';
+  document.getElementById('disconnectBtn').style.display = 'inline-block';
+  showNotification('Wallet connected: ' + short, 'success');
+}
 
-// ─── WALLETCONNECT ────────────────────────────────────────────────────────────
-
-async function connectWalletConnect() {
-  try {
-    showNotification("Opening WalletConnect...", "info");
-    const WCP = window.WalletConnectProvider && (window.WalletConnectProvider.default || window.WalletConnectProvider);
-    if (!WCP) { showNotification("WalletConnect not loaded yet, retry in 2s", "error"); return; }
-    const wcProvider = new WCP({ rpc: { 11155111: "https://rpc.sepolia.org" }, chainId: 11155111 });
-    await wcProvider.enable();
-    provider = new ethers.BrowserProvider(wcProvider);
-    signer = await provider.getSigner();
-    userAddress = await signer.getAddress();
-    const short = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-    document.getElementById("connectBtn").textContent = short;
-    document.getElementById("connectWCBtn").textContent = "✓ Connected";
-    document.getElementById("connectWCBtn").style.color = "var(--accent)";
-    document.getElementById("connectWCBtn").style.borderColor = "var(--accent)";
-    showNotification("Mobile wallet connected: " + short, "success");
-    fetchEthPrice();
-  } catch(e) { showNotification("WalletConnect: " + e.message, "error"); }
+function disconnectWallet() {
+  provider = null;
+  signer = null;
+  userAddress = null;
+  const btn = document.getElementById('connectBtn');
+  btn.textContent = 'Connect Wallet';
+  btn.classList.remove('connected');
+  document.getElementById('disconnectBtn').style.display = 'none';
+  showNotification('Wallet disconnected', 'info');
 }
 
 // ─── ETH PRICE ───────────────────────────────────────────────────────────────
