@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
 <style>
 :root {
   --bg: #080a0f;
@@ -753,7 +754,10 @@ footer {
     <li><a href="#deploy">Deploy</a></li>
     <li><a href="#interact">Interact</a></li>
   </ul>
-  <button id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button id="connectBtn" onclick="connectWallet()" style="background:transparent;border:1px solid var(--accent);color:var(--accent);padding:8px 16px;font-family:var(--mono);font-size:11px;cursor:pointer;letter-spacing:1px;">MetaMask</button>
+    <button id="connectWCBtn" onclick="connectWalletConnect()" style="background:transparent;border:1px solid var(--accent3);color:var(--accent3);padding:8px 16px;font-family:var(--mono);font-size:11px;cursor:pointer;letter-spacing:1px;">📱 Mobile</button>
+  </div>
 </nav>
 
 <!-- HERO -->
@@ -1177,6 +1181,29 @@ async function connectWallet() {
   } catch(e) {
     showNotification('Connection failed: ' + e.message, 'error');
   }
+}
+
+
+// ─── WALLETCONNECT ────────────────────────────────────────────────────────────
+
+async function connectWalletConnect() {
+  try {
+    showNotification("Opening WalletConnect...", "info");
+    const WCP = window.WalletConnectProvider && (window.WalletConnectProvider.default || window.WalletConnectProvider);
+    if (!WCP) { showNotification("WalletConnect not loaded yet, retry in 2s", "error"); return; }
+    const wcProvider = new WCP({ rpc: { 11155111: "https://rpc.sepolia.org" }, chainId: 11155111 });
+    await wcProvider.enable();
+    provider = new ethers.BrowserProvider(wcProvider);
+    signer = await provider.getSigner();
+    userAddress = await signer.getAddress();
+    const short = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+    document.getElementById("connectBtn").textContent = short;
+    document.getElementById("connectWCBtn").textContent = "✓ Connected";
+    document.getElementById("connectWCBtn").style.color = "var(--accent)";
+    document.getElementById("connectWCBtn").style.borderColor = "var(--accent)";
+    showNotification("Mobile wallet connected: " + short, "success");
+    fetchEthPrice();
+  } catch(e) { showNotification("WalletConnect: " + e.message, "error"); }
 }
 
 // ─── ETH PRICE ───────────────────────────────────────────────────────────────
