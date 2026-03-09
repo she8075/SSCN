@@ -1260,6 +1260,7 @@ const KYC_ABI = [
 ];
 
 const SSCN_ABI = [
+  'constructor(address _priceFeed, address _identityRegistry, address _usdc, uint256 _couponBps, uint256 _maturityDelay, uint256 _barrierPct)',
   'function S0() view returns (uint256)',
   'function BARRIER() view returns (uint256)',
   'function MATURITY() view returns (uint256)',
