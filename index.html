@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SSCN — Structured Security Crypto Note</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<style>
+:root {
+  --bg: #080a0f;
+  --surface: #0d1117;
+  --surface2: #111820;
+  --border: rgba(255,255,255,0.06);
+  --border-glow: rgba(0,255,180,0.2);
+  --accent: #00ffb4;
+  --accent2: #ff6b35;
+  --accent3: #7b8cff;
+  --text: #e8edf5;
+  --text-muted: #5a6a7e;
+  --text-dim: #2a3545;
+  --danger: #ff4466;
+  --success: #00ffb4;
+  --mono: 'DM Mono', monospace;
+  --sans: 'Syne', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* NOISE TEXTURE */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* GRID LINES */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(0,255,180,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,180,0.015) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* NAV */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 40px;
+  background: rgba(8,10,15,0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-logo {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--accent);
+}
+
+.nav-logo span { color: var(--text-muted); font-weight: 400; }
+
+.nav-links {
+  display: flex;
+  gap: 32px;
+  list-style: none;
+}
+
+.nav-links a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover { color: var(--accent); }
+
+#connectBtn {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 8px 20px;
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+}
+
+#connectBtn:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+#connectBtn.connected {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-size: 11px;
+}
+
+/* HERO */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 120px 40px 80px;
+  z-index: 1;
+}
+
+.hero-glow {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(ellipse, rgba(0,255,180,0.04) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.2s forwards;
+}
+
+.hero h1 {
+  font-size: clamp(48px, 8vw, 96px);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -3px;
+  margin-bottom: 32px;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.4s forwards;
+}
+
+.hero h1 .accent { color: var(--accent); }
+.hero h1 .dim { color: var(--text-dim); }
+
+.hero-desc {
+  max-width: 520px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-muted);
+  margin-bottom: 48px;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.6s forwards;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 48px;
+  margin-bottom: 48px;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.8s forwards;
+}
+
+.stat-item {}
+.stat-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+.stat-value.green { color: var(--accent); }
+.stat-value.orange { color: var(--accent2); }
+.stat-value.blue { color: var(--accent3); }
+
+/* ETH PRICE TICKER */
+.eth-ticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 10px 20px;
+  font-family: var(--mono);
+  font-size: 13px;
+  opacity: 0;
+  animation: fadeUp 0.8s 1s forwards;
+}
+
+.ticker-dot {
+  width: 6px; height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+/* MAIN CONTENT */
+main {
+  position: relative;
+  z-index: 1;
+  padding: 0 40px 80px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* SECTION HEADERS */
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.section-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 2px;
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.section-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+section { margin-bottom: 80px; }
+
+/* CARDS */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 32px;
+  transition: border-color 0.3s;
+}
+
+.card:hover { border-color: var(--border-glow); }
+
+.card-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+/* GRID LAYOUTS */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+/* PAYOFF SIMULATOR */
+.simulator-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 16px;
+}
+
+.input-group { margin-bottom: 20px; }
+
+.input-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: block;
+}
+
+input[type="number"], input[type="text"] {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 16px;
+  font-family: var(--mono);
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input[type="number"]:focus, input[type="text"]:focus {
+  border-color: var(--accent);
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+  margin-top: 8px;
+}
+
+.payoff-result {
+  padding: 24px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  margin-top: 16px;
+}
+
+.payoff-scenario {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.payoff-scenario.breach { color: var(--danger); }
+.payoff-scenario.no-breach { color: var(--accent); }
+
+.payoff-amount {
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -2px;
+  margin-bottom: 8px;
+}
+
+.payoff-breakdown {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.8;
+}
+
+/* PAYOFF CHART */
+.chart-container {
+  position: relative;
+  height: 300px;
+}
+
+canvas { width: 100% !important; }
+
+/* DEPLOY SECTION */
+.deploy-form { display: grid; gap: 16px; }
+
+.param-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 28px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.btn-primary:hover {
+  background: #00e8a0;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.btn-secondary:hover {
+  background: rgba(0,255,180,0.05);
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+.btn-danger:hover { background: rgba(255,68,102,0.05); }
+
+.btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* CONTRACT VIEWER */
+.contract-input {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.contract-input input { flex: 1; }
+
+.contract-info {
+  display: none;
+}
+
+.contract-info.visible { display: block; }
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.info-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 16px;
+}
+
+.info-item-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.info-item-value {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text);
+}
+
+.info-item-value.accent { color: var(--accent); }
+.info-item-value.danger { color: var(--danger); }
+.info-item-value.orange { color: var(--accent2); }
+
+/* STATE BADGE */
+.state-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.state-badge.active {
+  background: rgba(0,255,180,0.08);
+  border: 1px solid rgba(0,255,180,0.3);
+  color: var(--accent);
+}
+
+.state-badge.settled {
+  background: rgba(123,140,255,0.08);
+  border: 1px solid rgba(123,140,255,0.3);
+  color: var(--accent3);
+}
+
+/* ACTION BUTTONS ROW */
+.actions-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+/* COUNTDOWN */
+.countdown {
+  font-family: var(--mono);
+  font-size: 32px;
+  color: var(--accent2);
+  letter-spacing: 2px;
+  margin: 8px 0;
+}
+
+/* LOG */
+.tx-log {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 16px;
+  height: 160px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.8;
+  margin-top: 16px;
+}
+
+.log-line { color: var(--text-muted); }
+.log-line.success { color: var(--accent); }
+.log-line.error { color: var(--danger); }
+.log-line.info { color: var(--accent3); }
+
+/* DEPLOYED CONTRACTS LIST */
+.contracts-list { display: grid; gap: 12px; }
+
+.contract-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 20px 24px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.contract-card:hover { border-color: var(--border-glow); }
+
+.contract-addr {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.contract-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+/* PRODUCT EXPLAINER */
+.explainer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+
+.explainer-item {
+  background: var(--surface);
+  padding: 32px;
+}
+
+.explainer-icon {
+  font-size: 32px;
+  margin-bottom: 16px;
+}
+
+.explainer-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.3px;
+}
+
+.explainer-text {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+/* PAYOFF DIAGRAM */
+.payoff-diagram {
+  position: relative;
+  height: 200px;
+  margin-top: 16px;
+}
+
+.diagram-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--border);
+}
+
+/* FOOTER */
+footer {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--border);
+  padding: 32px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-left {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.8;
+}
+
+.footer-links {
+  display: flex;
+  gap: 24px;
+}
+
+.footer-links a {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-decoration: none;
+  letter-spacing: 1px;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover { color: var(--accent); }
+
+/* ANIMATIONS */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  opacity: 0;
+  animation: fadeUp 0.6s forwards;
+}
+
+/* DIVIDER */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 32px 0;
+}
+
+/* NOTIFICATION */
+.notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border-glow);
+  padding: 16px 24px;
+  font-family: var(--mono);
+  font-size: 12px;
+  z-index: 200;
+  transform: translateX(120%);
+  transition: transform 0.3s;
+  max-width: 360px;
+}
+
+.notification.show { transform: translateX(0); }
+.notification.success { border-color: var(--accent); color: var(--accent); }
+.notification.error { border-color: var(--danger); color: var(--danger); }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .simulator-layout, .grid-2, .grid-3, .grid-4, .info-grid, .explainer-grid { grid-template-columns: 1fr; }
+  .param-grid { grid-template-columns: 1fr; }
+  nav { padding: 16px 20px; }
+  .nav-links { display: none; }
+  main, .hero { padding-left: 20px; padding-right: 20px; }
+  .hero h1 { font-size: 48px; letter-spacing: -2px; }
+  .hero-stats { gap: 24px; flex-wrap: wrap; }
+}
+
+.tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  padding: 3px 8px;
+  text-transform: uppercase;
+}
+
+.tag-green { background: rgba(0,255,180,0.08); color: var(--accent); border: 1px solid rgba(0,255,180,0.2); }
+.tag-orange { background: rgba(255,107,53,0.08); color: var(--accent2); border: 1px solid rgba(255,107,53,0.2); }
+.tag-blue { background: rgba(123,140,255,0.08); color: var(--accent3); border: 1px solid rgba(123,140,255,0.2); }
+
+.mono { font-family: var(--mono); }
+.text-muted { color: var(--text-muted); }
+.text-accent { color: var(--accent); }
+.text-danger { color: var(--danger); }
+.text-orange { color: var(--accent2); }
+
+.mt-8 { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-16 { margin-bottom: 16px; }
+
+.flex { display: flex; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">SSCN <span>/ Structured Security Crypto Note</span></div>
+  <ul class="nav-links">
+    <li><a href="#product">Product</a></li>
+    <li><a href="#simulator">Simulator</a></li>
+    <li><a href="#deploy">Deploy</a></li>
+    <li><a href="#interact">Interact</a></li>
+  </ul>
+  <button id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-tag">ERC-3643 · Sepolia Testnet · Chainlink Oracle</div>
+  <h1>
+    <span class="dim">Reverse</span><br>
+    <span class="accent">Convertible</span><br>
+    <span class="dim">on ETH/USD</span>
+  </h1>
+  <p class="hero-desc">
+    A tokenized structured product offering a guaranteed 10% annual coupon with capital protection above a European barrier. Fully on-chain, KYC-compliant, Chainlink-priced.
+  </p>
+  <div class="hero-stats">
+    <div class="stat-item">
+      <div class="stat-label">Annual Coupon</div>
+      <div class="stat-value green">+10%</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Barrier Level</div>
+      <div class="stat-value orange">−40%</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Nominal</div>
+      <div class="stat-value blue">$1,000</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Hist. Breach Rate</div>
+      <div class="stat-value">11.8%</div>
+    </div>
+  </div>
+  <div class="eth-ticker">
+    <div class="ticker-dot"></div>
+    <span class="text-muted">ETH/USD</span>
+    <span id="livePrice" style="color:var(--accent)">Loading...</span>
+    <span class="text-muted">· Chainlink Sepolia</span>
+  </div>
+</section>
+
+<!-- MAIN -->
+<main>
+
+  <!-- PRODUCT EXPLAINER -->
+  <section id="product">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <span class="section-title">How It Works</span>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="explainer-grid">
+      <div class="explainer-item">
+        <div class="explainer-icon">⬇</div>
+        <div class="explainer-title">Deposit</div>
+        <div class="explainer-text">Deposit $1,100 USDC per token. $1,000 is your nominal capital, $100 is the coupon pre-funded from the OTM put premium sold at inception.</div>
+      </div>
+      <div class="explainer-item">
+        <div class="explainer-icon">⏱</div>
+        <div class="explainer-title">Wait for Maturity</div>
+        <div class="explainer-text">The European barrier is observed <strong>only once</strong> — at maturity. Intraday volatility does not trigger early redemption. The price is read from Chainlink oracle.</div>
+      </div>
+      <div class="explainer-item">
+        <div class="explainer-icon">💰</div>
+        <div class="explainer-title">Redeem</div>
+        <div class="explainer-text">
+          <strong style="color:var(--accent)">No breach:</strong> S(T) ≥ B → $1,000 + $100 coupon = $1,100<br><br>
+          <strong style="color:var(--danger)">Breach:</strong> S(T) &lt; B → $1,000 × S(T)/S₀ + $100 coupon
+        </div>
+      </div>
+    </div>
+
+    <!-- Payoff Formula -->
+    <div class="card mt-16">
+      <div class="card-title">Payoff Formula</div>
+      <div class="grid-2" style="gap:32px;align-items:center">
+        <div>
+          <div style="margin-bottom:20px">
+            <div class="tag tag-green mb-8">Scenario 1 — No Breach</div>
+            <div style="font-family:var(--mono);font-size:20px;margin-top:12px">
+              Payoff = <span class="text-accent">$1,000</span> + <span class="text-accent">$100</span> = <span class="text-accent">$1,100</span>
+            </div>
+            <div class="text-muted mono mt-8" style="font-size:11px">when S(T) ≥ 60% × S₀</div>
+          </div>
+          <div class="divider"></div>
+          <div>
+            <div class="tag tag-orange mb-8">Scenario 2 — Breach</div>
+            <div style="font-family:var(--mono);font-size:18px;margin-top:12px">
+              Payoff = <span class="text-danger">$1,000 × S(T)/S₀</span> + <span class="text-accent">$100</span>
+            </div>
+            <div class="text-muted mono mt-8" style="font-size:11px">when S(T) &lt; 60% × S₀ · coupon always guaranteed</div>
+          </div>
+        </div>
+        <div>
+          <canvas id="payoffChart" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SIMULATOR -->
+  <section id="simulator">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <span class="section-title">Payoff Simulator</span>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="simulator-layout">
+      <div class="card">
+        <div class="card-title">Parameters</div>
+
+        <div class="input-group">
+          <label class="input-label">S₀ — Initial ETH Price ($)</label>
+          <input type="number" id="simS0" value="2000" oninput="updateSimulator()">
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Barrier — % of S₀</label>
+          <input type="number" id="simBarrier" value="60" min="1" max="99" oninput="updateSimulator()">
+          <input type="range" id="simBarrierRange" value="60" min="1" max="99" oninput="document.getElementById('simBarrier').value=this.value;updateSimulator()">
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">S(T) — ETH Price at Maturity ($)</label>
+          <input type="number" id="simST" value="1800" oninput="updateSimulator()">
+          <input type="range" id="simSTRange" value="1800" min="100" max="10000" oninput="document.getElementById('simST').value=this.value;updateSimulator()">
+        </div>
+
+        <div class="payoff-result" id="simResult">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Payoff Curve</div>
+        <div class="chart-container">
+          <canvas id="simChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEPLOY -->
+  <section id="deploy">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <span class="section-title">Deploy New Contract</span>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Contract Parameters</div>
+
+        <div class="param-grid">
+          <div class="input-group">
+            <label class="input-label">Barrier % (e.g. 6000 = 60%)</label>
+            <input type="number" id="depBarrier" value="6000" placeholder="6000">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Coupon BPS (e.g. 1000 = 10%)</label>
+            <input type="number" id="depCoupon" value="1000" placeholder="1000">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Maturity Delay (seconds)</label>
+            <input type="number" id="depMaturity" value="604800" placeholder="604800">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Preset</label>
+            <select id="depPreset" onchange="applyPreset()" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:12px 16px;font-family:var(--mono);font-size:14px;outline:none;">
+              <option value="">Custom</option>
+              <option value="300,11000,1000">Test — 5min, barrier 110%</option>
+              <option value="900,11000,1000">Test — 15min, barrier 110%</option>
+              <option value="3600,11000,1000">Test — 1h, barrier 110%</option>
+              <option value="604800,6000,1000">Production — 7d, barrier 60%</option>
+              <option value="31536000,6000,1000">Production — 1yr, barrier 60%</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:8px;padding:16px;background:var(--bg);border:1px solid var(--border)">
+          <div class="mono text-muted" style="font-size:11px;line-height:1.8">
+            <div>Price Feed (Chainlink ETH/USD Sepolia)</div>
+            <div class="text-accent">0x694AA1769357215DE4FAC081bf1f309aDC325306</div>
+            <div style="margin-top:8px">KYC Registry (MockKYC)</div>
+            <div class="text-accent">0x1DDd83f21D764369807a789CFFe60a651E011aF4</div>
+            <div style="margin-top:8px">USDC (MockUSDC)</div>
+            <div class="text-accent">0x19D76090915c4f97fF2075C3AC0822AbE1898E91</div>
+          </div>
+        </div>
+
+        <div class="actions-row mt-16">
+          <button class="btn btn-primary" onclick="deployContract()">Deploy Contract</button>
+        </div>
+
+        <div class="tx-log" id="deployLog">
+          <div class="log-line">// Ready to deploy — connect wallet first</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Previously Deployed Contracts</div>
+        <div class="contracts-list" id="deployedList">
+          <div class="contract-card" onclick="loadContract('0xf9588A62fdf90957E9A6Bb23bf8f03Ec95b4458C')">
+            <div>
+              <div class="contract-addr">0xf9588A62...4458C</div>
+              <div class="contract-meta">BarrierPct: 11000 · Delay: 7200s · Block: 10416165</div>
+            </div>
+            <div class="tag tag-green">ACTIVE</div>
+          </div>
+          <div class="contract-card" onclick="loadContract('0x98d0072D35059b9d9CF3d77971133f06604643cB')">
+            <div>
+              <div class="contract-addr">0x98d0072D...643cB</div>
+              <div class="contract-meta">BarrierPct: 11000 · Delay: 900s · Block: 10416042</div>
+            </div>
+            <div class="tag tag-blue">SETTLED</div>
+          </div>
+          <div class="contract-card" onclick="loadContract('0x306B42B29e8575a000f242507dEd12C2E56560Cd')">
+            <div>
+              <div class="contract-addr">0x306B42B2...560Cd</div>
+              <div class="contract-meta">BarrierPct: 11000 · Delay: 300s · Block: 10415947</div>
+            </div>
+            <div class="tag tag-blue">SETTLED</div>
+          </div>
+          <div class="contract-card" onclick="loadContract('0xe7ffc97766e6b198938e50857902d5012069C5dC')">
+            <div>
+              <div class="contract-addr">0xe7ffc977...C5dC</div>
+              <div class="contract-meta">BarrierPct: 9900 · Stage 2 Sc.2 · Block: 10409410</div>
+            </div>
+            <div class="tag tag-blue">SETTLED</div>
+          </div>
+          <div class="contract-card" onclick="loadContract('0xA02B28c45f814B7FF6c663cF1db5aFBa86edb571')">
+            <div>
+              <div class="contract-addr">0xA02B28c4...b571</div>
+              <div class="contract-meta">BarrierPct: 6000 · Stage 2 Sc.1 · Block: 10409337</div>
+            </div>
+            <div class="tag tag-blue">SETTLED</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INTERACT -->
+  <section id="interact">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <span class="section-title">Interact with Contract</span>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="contract-input">
+      <input type="text" id="contractAddress" placeholder="0x... — paste or click a contract above" value="0xf9588A62fdf90957E9A6Bb23bf8f03Ec95b4458C">
+      <button class="btn btn-secondary" onclick="loadContract(document.getElementById('contractAddress').value)">Load</button>
+    </div>
+
+    <div id="contractInfo" class="contract-info">
+
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-item-label">State</div>
+          <div class="info-item-value accent" id="infoState">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">S₀ — Initial Price</div>
+          <div class="info-item-value" id="infoS0">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">Barrier</div>
+          <div class="info-item-value orange" id="infoBarrier">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">Maturity</div>
+          <div class="info-item-value" id="infoMaturity">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">Time Remaining</div>
+          <div class="countdown" id="infoCountdown">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">Your Balance</div>
+          <div class="info-item-value accent" id="infoBalance">—</div>
+        </div>
+      </div>
+
+      <!-- Settled info -->
+      <div id="settledInfo" style="display:none">
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-item-label">Barrier Breached</div>
+            <div class="info-item-value" id="infoBreached">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">Capital per Token</div>
+            <div class="info-item-value" id="infoCapital">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">Total Payoff</div>
+            <div class="info-item-value accent" id="infoPayoff">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <button class="btn btn-secondary" onclick="mintUSDC()" id="btnMint">Mint $1,100 USDC</button>
+        <button class="btn btn-secondary" onclick="approveAndDeposit()" id="btnDeposit">Approve & Deposit</button>
+        <button class="btn btn-secondary" onclick="issueToken()" id="btnIssue">Issue Token</button>
+        <button class="btn btn-primary" onclick="settle()" id="btnSettle">Settle at Maturity</button>
+        <button class="btn btn-primary" onclick="redeem()" id="btnRedeem">Redeem</button>
+        <a id="etherscanLink" href="#" target="_blank" style="text-decoration:none">
+          <button class="btn btn-secondary">↗ Etherscan</button>
+        </a>
+      </div>
+
+      <div class="tx-log" id="interactLog">
+        <div class="log-line">// Contract loaded — ready to interact</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">
+    SSCN — Structured Security Crypto Note<br>
+    BOUZIANI Shéhérazade · SYLLA Mourad · MSc Finance, Technology & Data · March 2026
+  </div>
+  <div class="footer-links">
+    <a href="https://sepolia.etherscan.io" target="_blank">Etherscan</a>
+    <a href="https://remix.ethereum.org" target="_blank">Remix</a>
+    <a href="https://data.chain.link/feeds/ethereum/mainnet/eth-usd" target="_blank">Chainlink</a>
+  </div>
+</footer>
+
+<!-- NOTIFICATION -->
+<div class="notification" id="notification"></div>
+
+<script>
+// ─── CONFIG ─────────────────────────────────────────────────────────────────
+
+const CHAINLINK_ADDR = '0x694AA1769357215DE4FAC081bf1f309aDC325306';
+const MOCKUSDC_ADDR  = '0x19D76090915c4f97fF2075C3AC0822AbE1898E91';
+const MOCKKYC_ADDR   = '0x1DDd83f21D764369807a789CFFe60a651E011aF4';
+const SEPOLIA_CHAINID = 11155111n;
+
+const CHAINLINK_ABI = [
+  'function latestRoundData() view returns (uint80,int256,uint256,uint256,uint80)'
+];
+
+const ERC20_ABI = [
+  'function mint(address to, uint256 amount) external',
+  'function approve(address spender, uint256 amount) external returns (bool)',
+  'function balanceOf(address) view returns (uint256)',
+  'function decimals() view returns (uint8)'
+];
+
+const KYC_ABI = [
+  'function verify(address _account) external'
+];
+
+const SSCN_ABI = [
+  'function S0() view returns (uint256)',
+  'function BARRIER() view returns (uint256)',
+  'function MATURITY() view returns (uint256)',
+  'function currentState() view returns (uint8)',
+  'function barrierBreached() view returns (bool)',
+  'function capitalPerToken() view returns (uint256)',
+  'function couponPerToken() view returns (uint256)',
+  'function balanceOf(address) view returns (uint256)',
+  'function deposit(uint256 _amount) external',
+  'function issue(address _investor, uint256 _amount) external',
+  'function settleAtMaturity() external',
+  'function redeem() external',
+  'event Settled(uint256 finalPrice, bool barrierBreached)',
+  'event CouponAndCapitalPaid(address indexed investor, uint256 amount)'
+];
+
+// Bytecode placeholder — in production, paste compiled bytecode here
+const SSCN_BYTECODE = '0x'; // Will be replaced with actual bytecode
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+
+let provider, signer, userAddress;
+let currentContract = null;
+let countdownInterval = null;
+
+// ─── WALLET ──────────────────────────────────────────────────────────────────
+
+async function connectWallet() {
+  if (!window.ethereum) {
+    showNotification('MetaMask not detected. Please install MetaMask.', 'error');
+    return;
+  }
+  try {
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send('eth_requestAccounts', []);
+    signer = await provider.getSigner();
+    userAddress = await signer.getAddress();
+
+    const network = await provider.getNetwork();
+    if (network.chainId !== SEPOLIA_CHAINID) {
+      showNotification('Please switch to Sepolia testnet', 'error');
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0xaa36a7' }]
+        });
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+      } catch(e) { return; }
+    }
+
+    const short = userAddress.slice(0,6) + '...' + userAddress.slice(-4);
+    document.getElementById('connectBtn').textContent = short;
+    document.getElementById('connectBtn').classList.add('connected');
+    showNotification('Wallet connected: ' + short, 'success');
+
+    fetchEthPrice();
+  } catch(e) {
+    showNotification('Connection failed: ' + e.message, 'error');
+  }
+}
+
+// ─── ETH PRICE ───────────────────────────────────────────────────────────────
+
+async function fetchEthPrice() {
+  try {
+    const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
+    const feed = new ethers.Contract(CHAINLINK_ADDR, CHAINLINK_ABI, prov);
+    const [,answer] = await feed.latestRoundData();
+    const price = Number(answer) / 1e8;
+    document.getElementById('livePrice').textContent = '$' + price.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    document.getElementById('simS0').value = Math.round(price);
+    updateSimulator();
+  } catch(e) {
+    document.getElementById('livePrice').textContent = '~$2,006';
+  }
+}
+
+// ─── SIMULATOR ───────────────────────────────────────────────────────────────
+
+function updateSimulator() {
+  const S0 = parseFloat(document.getElementById('simS0').value) || 2000;
+  const barrierPct = parseFloat(document.getElementById('simBarrier').value) || 60;
+  const ST = parseFloat(document.getElementById('simST').value) || 1800;
+
+  // Sync range sliders
+  document.getElementById('simBarrierRange').value = barrierPct;
+  document.getElementById('simSTRange').max = Math.max(ST * 1.5, S0 * 2);
+  document.getElementById('simSTRange').value = ST;
+
+  const barrier = S0 * barrierPct / 100;
+  const breached = ST < barrier;
+  const capital = breached ? (1000 * ST / S0) : 1000;
+  const coupon = 100;
+  const payoff = capital + coupon;
+
+  const result = document.getElementById('simResult');
+  result.innerHTML = `
+    <div class="payoff-scenario ${breached ? 'breach' : 'no-breach'}">
+      ${breached ? '⚠ BARRIER BREACHED' : '✓ NO BREACH'}
+    </div>
+    <div class="payoff-amount" style="color:${breached ? 'var(--danger)' : 'var(--accent)'}">
+      $${payoff.toFixed(2)}
+    </div>
+    <div class="payoff-breakdown">
+      S₀ = $${S0.toLocaleString()} · Barrier = $${barrier.toFixed(2)} (${barrierPct}%)<br>
+      S(T) = $${ST.toLocaleString()} · ${breached ? 'BELOW' : 'ABOVE'} barrier<br>
+      Capital = $${capital.toFixed(2)} · Coupon = $${coupon.toFixed(2)}<br>
+      P&L = ${((payoff/1100-1)*100).toFixed(2)}% vs $1,100 invested
+    </div>
+  `;
+
+  drawSimChart(S0, barrierPct);
+}
+
+function drawSimChart(S0, barrierPct) {
+  const canvas = document.getElementById('simChart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.parentElement.offsetWidth;
+  const H = 280;
+  canvas.width = W;
+  canvas.height = H;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l: 60, r: 20, t: 20, b: 40 };
+  const cW = W - pad.l - pad.r;
+  const cH = H - pad.t - pad.b;
+
+  const barrier = S0 * barrierPct / 100;
+  const maxST = S0 * 2;
+  const minPayoff = 100;
+  const maxPayoff = 1200;
+
+  function xScale(st) { return pad.l + (st / maxST) * cW; }
+  function yScale(p) { return pad.t + cH - ((p - minPayoff) / (maxPayoff - minPayoff)) * cH; }
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (cH / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cW, y); ctx.stroke();
+    const val = maxPayoff - (maxPayoff - minPayoff) * i / 4;
+    ctx.fillStyle = '#3a4a5e';
+    ctx.font = '10px DM Mono, monospace';
+    ctx.fillText('$' + Math.round(val), 4, y + 4);
+  }
+
+  // Barrier line
+  const bx = xScale(barrier);
+  ctx.strokeStyle = 'rgba(255,107,53,0.4)';
+  ctx.setLineDash([4, 4]);
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(bx, pad.t); ctx.lineTo(bx, pad.t + cH); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(255,107,53,0.7)';
+  ctx.font = '9px DM Mono, monospace';
+  ctx.fillText('B=$' + Math.round(barrier), bx + 4, pad.t + 12);
+
+  // $1,100 line
+  const y1100 = yScale(1100);
+  ctx.strokeStyle = 'rgba(0,255,180,0.15)';
+  ctx.setLineDash([2, 4]);
+  ctx.beginPath(); ctx.moveTo(pad.l, y1100); ctx.lineTo(pad.l + cW, y1100); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Payoff curve
+  ctx.beginPath();
+  const steps = 200;
+  for (let i = 0; i <= steps; i++) {
+    const st = (i / steps) * maxST;
+    const breached = st < barrier;
+    const capital = breached ? (1000 * st / S0) : 1000;
+    const payoff = capital + 100;
+    const x = xScale(st);
+    const y = yScale(payoff);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+
+  // Gradient fill
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, 'rgba(0,255,180,0.15)');
+  grad.addColorStop(1, 'rgba(0,255,180,0)');
+
+  ctx.strokeStyle = '#00ffb4';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.lineTo(pad.l + cW, pad.t + cH);
+  ctx.lineTo(pad.l, pad.t + cH);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Current ST dot
+  const currentST = parseFloat(document.getElementById('simST').value) || 1800;
+  if (currentST <= maxST) {
+    const breached = currentST < barrier;
+    const capital = breached ? (1000 * currentST / S0) : 1000;
+    const payoff = capital + 100;
+    const dx = xScale(currentST);
+    const dy = yScale(payoff);
+    ctx.beginPath();
+    ctx.arc(dx, dy, 5, 0, Math.PI * 2);
+    ctx.fillStyle = breached ? '#ff4466' : '#00ffb4';
+    ctx.fill();
+  }
+
+  // X axis labels
+  ctx.fillStyle = '#3a4a5e';
+  ctx.font = '10px DM Mono, monospace';
+  ctx.fillText('$0', pad.l - 4, pad.t + cH + 20);
+  ctx.fillText('$' + Math.round(S0), xScale(S0) - 10, pad.t + cH + 20);
+  ctx.fillText('$' + Math.round(maxST), xScale(maxST) - 24, pad.t + cH + 20);
+}
+
+function drawPayoffChart() {
+  const canvas = document.getElementById('payoffChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.parentElement.offsetWidth || 400;
+  const H = 220;
+  canvas.width = W;
+  canvas.height = H;
+
+  const S0 = 2000;
+  const barrier = S0 * 0.6;
+  const maxST = 4000;
+  const pad = { l: 50, r: 10, t: 10, b: 30 };
+  const cW = W - pad.l - pad.r;
+  const cH = H - pad.t - pad.b;
+
+  function xS(st) { return pad.l + (st / maxST) * cW; }
+  function yS(p) { return pad.t + cH - ((p - 0) / 1300) * cH; }
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  [0, 500, 1000, 1100].forEach(v => {
+    ctx.beginPath(); ctx.moveTo(pad.l, yS(v)); ctx.lineTo(pad.l + cW, yS(v)); ctx.stroke();
+    ctx.fillStyle = '#3a4a5e';
+    ctx.font = '9px DM Mono, monospace';
+    ctx.fillText('$'+v, 2, yS(v)+3);
+  });
+
+  // Barrier
+  ctx.strokeStyle = 'rgba(255,107,53,0.5)';
+  ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(xS(barrier), pad.t); ctx.lineTo(xS(barrier), pad.t+cH); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(255,107,53,0.8)';
+  ctx.font = '9px DM Mono, monospace';
+  ctx.fillText('B', xS(barrier)+3, pad.t+12);
+
+  // Curve
+  ctx.beginPath();
+  for (let i = 0; i <= 200; i++) {
+    const st = (i/200)*maxST;
+    const p = st < barrier ? (1000*st/S0)+100 : 1100;
+    const x = xS(st), y = yS(p);
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle = '#00ffb4';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  ctx.fillStyle = '#3a4a5e';
+  ctx.font = '9px DM Mono, monospace';
+  ctx.fillText('S(T)', pad.l + cW - 20, pad.t + cH + 20);
+}
+
+// ─── DEPLOY ───────────────────────────────────────────────────────────────────
+
+function applyPreset() {
+  const val = document.getElementById('depPreset').value;
+  if (!val) return;
+  const [delay, barrier, coupon] = val.split(',');
+  document.getElementById('depMaturity').value = delay;
+  document.getElementById('depBarrier').value = barrier;
+  document.getElementById('depCoupon').value = coupon;
+}
+
+async function deployContract() {
+  if (!signer) { showNotification('Connect wallet first', 'error'); return; }
+
+  const barrierPct = document.getElementById('depBarrier').value;
+  const couponBps = document.getElementById('depCoupon').value;
+  const maturityDelay = document.getElementById('depMaturity').value;
+
+  deployLog('info', `Deploying with barrier=${barrierPct}, coupon=${couponBps}bps, delay=${maturityDelay}s...`);
+
+  if (SSCN_BYTECODE === '0x') {
+    deployLog('error', 'Bytecode not embedded. Please use Remix to deploy — paste the bytecode in the source.');
+    showNotification('Deployment via site requires bytecode. Use Remix for now.', 'error');
+    return;
+  }
+
+  try {
+    const factory = new ethers.ContractFactory(SSCN_ABI, SSCN_BYTECODE, signer);
+    const contract = await factory.deploy(
+      CHAINLINK_ADDR, MOCKKYC_ADDR, MOCKUSDC_ADDR,
+      couponBps, maturityDelay, barrierPct
+    );
+    deployLog('info', 'Tx sent: ' + contract.deploymentTransaction().hash);
+    await contract.waitForDeployment();
+    const addr = await contract.getAddress();
+    deployLog('success', 'Deployed at: ' + addr);
+    showNotification('Contract deployed: ' + addr.slice(0,10) + '...', 'success');
+
+    // Auto-load
+    document.getElementById('contractAddress').value = addr;
+    await loadContract(addr);
+  } catch(e) {
+    deployLog('error', e.message);
+    showNotification('Deploy failed', 'error');
+  }
+}
+
+// ─── INTERACT ─────────────────────────────────────────────────────────────────
+
+async function loadContract(addr) {
+  if (!addr || addr.length < 10) return;
+  document.getElementById('contractAddress').value = addr;
+  document.getElementById('etherscanLink').href = `https://sepolia.etherscan.io/address/${addr}`;
+
+  try {
+    const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
+    currentContract = new ethers.Contract(addr, SSCN_ABI, signer || prov);
+
+    const [S0, BARRIER, MATURITY, state] = await Promise.all([
+      currentContract.S0(),
+      currentContract.BARRIER(),
+      currentContract.MATURITY(),
+      currentContract.currentState()
+    ]);
+
+    const s0 = Number(S0) / 1e8;
+    const bar = Number(BARRIER) / 1e8;
+    const mat = Number(MATURITY);
+    const isActive = state === 0n;
+
+    document.getElementById('infoS0').textContent = '$' + s0.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    document.getElementById('infoBarrier').textContent = '$' + bar.toFixed(2) + ' (' + ((bar/s0)*100).toFixed(0) + '% S₀)';
+    document.getElementById('infoState').textContent = isActive ? 'ACTIVE' : 'SETTLED';
+    document.getElementById('infoState').style.color = isActive ? 'var(--accent)' : 'var(--accent3)';
+
+    const matDate = new Date(mat * 1000);
+    document.getElementById('infoMaturity').textContent = matDate.toLocaleString('en-GB');
+
+    // Balance
+    if (userAddress) {
+      const bal = await currentContract.balanceOf(userAddress);
+      document.getElementById('infoBalance').textContent = bal.toString() + ' SSCN token(s)';
+    }
+
+    // Countdown
+    if (countdownInterval) clearInterval(countdownInterval);
+    updateCountdown(mat);
+    countdownInterval = setInterval(() => updateCountdown(mat), 1000);
+
+    // Settled info
+    if (!isActive) {
+      document.getElementById('settledInfo').style.display = 'block';
+      const [breached, capital, coupon] = await Promise.all([
+        currentContract.barrierBreached(),
+        currentContract.capitalPerToken(),
+        currentContract.couponPerToken()
+      ]);
+      const cap = Number(capital) / 1e6;
+      const coup = Number(coupon) / 1e6;
+      document.getElementById('infoBreached').textContent = breached ? 'YES' : 'NO';
+      document.getElementById('infoBreached').style.color = breached ? 'var(--danger)' : 'var(--accent)';
+      document.getElementById('infoCapital').textContent = '$' + cap.toFixed(2);
+      document.getElementById('infoPayoff').textContent = '$' + (cap + coup).toFixed(2);
+    } else {
+      document.getElementById('settledInfo').style.display = 'none';
+    }
+
+    document.getElementById('contractInfo').classList.add('visible');
+    interactLog('success', 'Contract loaded: ' + addr);
+  } catch(e) {
+    interactLog('error', 'Failed to load: ' + e.message);
+  }
+}
+
+function updateCountdown(matTimestamp) {
+  const now = Math.floor(Date.now() / 1000);
+  const diff = matTimestamp - now;
+  const el = document.getElementById('infoCountdown');
+  if (diff <= 0) {
+    el.textContent = 'MATURE';
+    el.style.color = 'var(--accent)';
+  } else {
+    const d = Math.floor(diff / 86400);
+    const h = Math.floor((diff % 86400) / 3600);
+    const m = Math.floor((diff % 3600) / 60);
+    const s = diff % 60;
+    el.textContent = d > 0
+      ? `${d}d ${h.toString().padStart(2,'0')}h ${m.toString().padStart(2,'0')}m`
+      : `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+  }
+}
+
+async function mintUSDC() {
+  if (!signer) { showNotification('Connect wallet first', 'error'); return; }
+  try {
+    const usdc = new ethers.Contract(MOCKUSDC_ADDR, ERC20_ABI, signer);
+    interactLog('info', 'Minting $1,100 USDC...');
+    const tx = await usdc.mint(userAddress, 1100000000n);
+    interactLog('info', 'Tx: ' + tx.hash);
+    await tx.wait();
+    interactLog('success', '$1,100 USDC minted ✓');
+    showNotification('$1,100 USDC minted', 'success');
+  } catch(e) {
+    interactLog('error', e.message);
+  }
+}
+
+async function approveAndDeposit() {
+  if (!signer || !currentContract) { showNotification('Load a contract first', 'error'); return; }
+  try {
+    const contractAddr = await currentContract.getAddress();
+    const usdc = new ethers.Contract(MOCKUSDC_ADDR, ERC20_ABI, signer);
+    interactLog('info', 'Approving $1,100 USDC...');
+    const approveTx = await usdc.approve(contractAddr, 1100000000n);
+    await approveTx.wait();
+    interactLog('success', 'Approved ✓');
+    interactLog('info', 'Depositing...');
+    const depositTx = await currentContract.connect(signer).deposit(1100000000n);
+    interactLog('info', 'Tx: ' + depositTx.hash);
+    await depositTx.wait();
+    interactLog('success', 'Deposited $1,100 USDC ✓');
+    showNotification('Deposit successful', 'success');
+  } catch(e) {
+    interactLog('error', e.message);
+  }
+}
+
+async function issueToken() {
+  if (!signer || !currentContract) { showNotification('Load a contract first', 'error'); return; }
+  try {
+    interactLog('info', 'Verifying KYC...');
+    const kyc = new ethers.Contract(MOCKKYC_ADDR, KYC_ABI, signer);
+    const kycTx = await kyc.verify(userAddress);
+    await kycTx.wait();
+    interactLog('success', 'KYC verified ✓');
+    interactLog('info', 'Issuing 1 SSCN token...');
+    const tx = await currentContract.connect(signer).issue(userAddress, 1n);
+    interactLog('info', 'Tx: ' + tx.hash);
+    await tx.wait();
+    interactLog('success', '1 SSCN token issued ✓');
+    showNotification('Token issued', 'success');
+    const bal = await currentContract.balanceOf(userAddress);
+    document.getElementById('infoBalance').textContent = bal.toString() + ' SSCN token(s)';
+  } catch(e) {
+    interactLog('error', e.message);
+  }
+}
+
+async function settle() {
+  if (!signer || !currentContract) { showNotification('Load a contract first', 'error'); return; }
+  try {
+    interactLog('info', 'Calling settleAtMaturity()...');
+    const tx = await currentContract.connect(signer).settleAtMaturity();
+    interactLog('info', 'Tx: ' + tx.hash);
+    const receipt = await tx.wait();
+    interactLog('success', 'Settled ✓ Block: ' + receipt.blockNumber);
+    showNotification('Contract settled', 'success');
+    const addr = document.getElementById('contractAddress').value;
+    await loadContract(addr);
+  } catch(e) {
+    interactLog('error', e.message);
+    if (e.message.includes('not yet')) interactLog('info', 'Maturity not reached yet');
+  }
+}
+
+async function redeem() {
+  if (!signer || !currentContract) { showNotification('Load a contract first', 'error'); return; }
+  try {
+    interactLog('info', 'Calling redeem()...');
+    const tx = await currentContract.connect(signer).redeem();
+    interactLog('info', 'Tx: ' + tx.hash);
+    const receipt = await tx.wait();
+    interactLog('success', 'Redeemed ✓ Block: ' + receipt.blockNumber);
+    showNotification('Payoff received!', 'success');
+  } catch(e) {
+    interactLog('error', e.message);
+  }
+}
+
+// ─── LOGS ─────────────────────────────────────────────────────────────────────
+
+function deployLog(type, msg) {
+  const log = document.getElementById('deployLog');
+  const line = document.createElement('div');
+  line.className = 'log-line ' + type;
+  line.textContent = '> ' + msg;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+function interactLog(type, msg) {
+  const log = document.getElementById('interactLog');
+  const line = document.createElement('div');
+  line.className = 'log-line ' + type;
+  const time = new Date().toLocaleTimeString('en-GB');
+  line.textContent = '[' + time + '] ' + msg;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+// ─── NOTIFICATION ─────────────────────────────────────────────────────────────
+
+function showNotification(msg, type = 'success') {
+  const el = document.getElementById('notification');
+  el.textContent = msg;
+  el.className = 'notification ' + type + ' show';
+  setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+
+window.addEventListener('load', () => {
+  drawPayoffChart();
+  updateSimulator();
+  fetchEthPrice();
+  setInterval(fetchEthPrice, 60000);
+
+  // Auto-load first contract
+  setTimeout(() => loadContract('0xf9588A62fdf90957E9A6Bb23bf8f03Ec95b4458C'), 500);
+
+  // Redraw charts on resize
+  window.addEventListener('resize', () => {
+    drawPayoffChart();
+    drawSimChart(
+      parseFloat(document.getElementById('simS0').value) || 2000,
+      parseFloat(document.getElementById('simBarrier').value) || 60
+    );
+  });
+});
+</script>
+
+</body>
+</html>
