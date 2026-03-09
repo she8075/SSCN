@@ -1149,6 +1149,10 @@ footer {
             <div class="info-item-value" id="infoBreached">—</div>
           </div>
           <div class="info-item">
+            <div class="info-item-label">S(T) — Final Price</div>
+            <div class="info-item-value" id="infoFinalPrice">—</div>
+          </div>
+          <div class="info-item">
             <div class="info-item-label">Capital per Token</div>
             <div class="info-item-value" id="infoCapital">—</div>
           </div>
@@ -1272,6 +1276,7 @@ const SSCN_ABI = [
   'function deposit(uint256 _amount) external',
   'function issue(address _investor, uint256 _amount) external',
   'function settleAtMaturity() external',
+  'function finalETHPrice() view returns (uint256)',
   'function redeem() external',
   'event Settled(uint256 finalPrice, bool barrierBreached)',
   'event CouponAndCapitalPaid(address indexed investor, uint256 amount)'
@@ -1640,15 +1645,19 @@ async function loadContract(addr) {
     // Settled info
     if (!isActive) {
       document.getElementById('settledInfo').style.display = 'block';
-      const [breached, capital, coupon] = await Promise.all([
+      const [breached, capital, coupon, finalPrice] = await Promise.all([
         currentContract.barrierBreached(),
         currentContract.capitalPerToken(),
-        currentContract.couponPerToken()
+        currentContract.couponPerToken(),
+        currentContract.finalETHPrice()
       ]);
       const cap = Number(capital) / 1e6;
       const coup = Number(coupon) / 1e6;
+      const sT = Number(finalPrice) / 1e8;
       document.getElementById('infoBreached').textContent = breached ? 'YES' : 'NO';
       document.getElementById('infoBreached').style.color = breached ? 'var(--danger)' : 'var(--accent)';
+      document.getElementById('infoFinalPrice').textContent = '$' + sT.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+      document.getElementById('infoFinalPrice').style.color = breached ? 'var(--danger)' : 'var(--accent)';
       document.getElementById('infoCapital').textContent = '$' + cap.toFixed(2);
       document.getElementById('infoPayoff').textContent = '$' + (cap + coup).toFixed(2);
     } else {
