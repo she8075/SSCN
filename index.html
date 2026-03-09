@@ -1039,8 +1039,12 @@ footer {
           <div class="countdown" id="infoCountdown">—</div>
         </div>
         <div class="info-item">
-          <div class="info-item-label">Your Balance</div>
+          <div class="info-item-label">SSCN Balance</div>
           <div class="info-item-value accent" id="infoBalance">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">USDC Balance</div>
+          <div class="info-item-value" id="infoUSDCBalance">—</div>
         </div>
       </div>
 
@@ -1062,10 +1066,21 @@ footer {
         </div>
       </div>
 
+      <!-- Token amount selector -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;background:var(--bg);border:1px solid var(--border);padding:16px">
+        <div>
+          <div class="input-label" style="margin-bottom:4px">Number of tokens</div>
+          <input type="number" id="tokenAmount" value="1" min="1" max="100" oninput="updateAmountDisplay()" style="width:100px;font-size:20px;padding:8px 12px">
+        </div>
+        <div style="color:var(--text-muted);font-family:var(--mono);font-size:13px;padding-top:20px">
+          × $1,100 = <span id="totalAmount" style="color:var(--accent);font-size:18px;font-weight:700">$1,100</span> USDC required
+        </div>
+      </div>
+
       <div class="actions-row">
-        <button class="btn btn-secondary" onclick="mintUSDC()" id="btnMint">Mint $1,100 USDC</button>
+        <button class="btn btn-secondary" onclick="mintUSDC()" id="btnMint">Mint USDC</button>
         <button class="btn btn-secondary" onclick="approveAndDeposit()" id="btnDeposit">Approve & Deposit</button>
-        <button class="btn btn-secondary" onclick="issueToken()" id="btnIssue">Issue Token</button>
+        <button class="btn btn-secondary" onclick="issueToken()" id="btnIssue">Issue Token(s)</button>
         <button class="btn btn-primary" onclick="settle()" id="btnSettle">Settle at Maturity</button>
         <button class="btn btn-primary" onclick="redeem()" id="btnRedeem">Redeem</button>
         <a id="etherscanLink" href="#" target="_blank" style="text-decoration:none">
@@ -1486,11 +1501,8 @@ async function loadContract(addr) {
     const matDate = new Date(mat * 1000);
     document.getElementById('infoMaturity').textContent = matDate.toLocaleString('en-GB');
 
-    // Balance
-    if (userAddress) {
-      const bal = await currentContract.balanceOf(userAddress);
-      document.getElementById('infoBalance').textContent = bal.toString() + ' SSCN token(s)';
-    }
+    // Balances
+    await refreshBalances();
 
     // Countdown
     if (countdownInterval) clearInterval(countdownInterval);
@@ -1540,16 +1552,44 @@ function updateCountdown(matTimestamp) {
   }
 }
 
+function getTokenAmount() {
+  return parseInt(document.getElementById('tokenAmount')?.value || '1');
+}
+
+function updateAmountDisplay() {
+  const n = getTokenAmount();
+  const total = n * 1100;
+  document.getElementById('totalAmount').textContent = '$' + total.toLocaleString();
+}
+
+async function refreshBalances() {
+  if (!userAddress) return;
+  try {
+    const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
+    const usdc = new ethers.Contract(MOCKUSDC_ADDR, ERC20_ABI, prov);
+    const usdcBal = await usdc.balanceOf(userAddress);
+    const usdcFormatted = (Number(usdcBal) / 1e6).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    document.getElementById('infoUSDCBalance').textContent = '$' + usdcFormatted + ' USDC';
+    if (currentContract) {
+      const sscnBal = await currentContract.balanceOf(userAddress);
+      document.getElementById('infoBalance').textContent = sscnBal.toString() + ' SSCN token(s)';
+    }
+  } catch(e) {}
+}
+
 async function mintUSDC() {
   if (!signer) { showNotification('Connect wallet first', 'error'); return; }
   try {
+    const n = getTokenAmount();
+    const amount = BigInt(n) * 1100000000n;
     const usdc = new ethers.Contract(MOCKUSDC_ADDR, ERC20_ABI, signer);
-    interactLog('info', 'Minting $1,100 USDC...');
-    const tx = await usdc.mint(userAddress, 1100000000n);
+    interactLog('info', `Minting $${(n*1100).toLocaleString()} USDC (${n} token(s))...`);
+    const tx = await usdc.mint(userAddress, amount);
     interactLog('info', 'Tx: ' + tx.hash);
     await tx.wait();
-    interactLog('success', '$1,100 USDC minted ✓');
-    showNotification('$1,100 USDC minted', 'success');
+    interactLog('success', `$${(n*1100).toLocaleString()} USDC minted ✓`);
+    showNotification(`$${(n*1100).toLocaleString()} USDC minted`, 'success');
+    await refreshBalances();
   } catch(e) {
     interactLog('error', e.message);
   }
@@ -1558,18 +1598,21 @@ async function mintUSDC() {
 async function approveAndDeposit() {
   if (!signer || !currentContract) { showNotification('Load a contract first', 'error'); return; }
   try {
+    const n = getTokenAmount();
+    const amount = BigInt(n) * 1100000000n;
     const contractAddr = await currentContract.getAddress();
     const usdc = new ethers.Contract(MOCKUSDC_ADDR, ERC20_ABI, signer);
-    interactLog('info', 'Approving $1,100 USDC...');
-    const approveTx = await usdc.approve(contractAddr, 1100000000n);
+    interactLog('info', `Approving $${(n*1100).toLocaleString()} USDC...`);
+    const approveTx = await usdc.approve(contractAddr, amount);
     await approveTx.wait();
     interactLog('success', 'Approved ✓');
-    interactLog('info', 'Depositing...');
-    const depositTx = await currentContract.connect(signer).deposit(1100000000n);
+    interactLog('info', `Depositing $${(n*1100).toLocaleString()} USDC...`);
+    const depositTx = await currentContract.connect(signer).deposit(amount);
     interactLog('info', 'Tx: ' + depositTx.hash);
     await depositTx.wait();
-    interactLog('success', 'Deposited $1,100 USDC ✓');
+    interactLog('success', `Deposited $${(n*1100).toLocaleString()} USDC ✓`);
     showNotification('Deposit successful', 'success');
+    await refreshBalances();
   } catch(e) {
     interactLog('error', e.message);
   }
@@ -1578,19 +1621,19 @@ async function approveAndDeposit() {
 async function issueToken() {
   if (!signer || !currentContract) { showNotification('Load a contract first', 'error'); return; }
   try {
+    const n = getTokenAmount();
     interactLog('info', 'Verifying KYC...');
     const kyc = new ethers.Contract(MOCKKYC_ADDR, KYC_ABI, signer);
     const kycTx = await kyc.verify(userAddress);
     await kycTx.wait();
     interactLog('success', 'KYC verified ✓');
-    interactLog('info', 'Issuing 1 SSCN token...');
-    const tx = await currentContract.connect(signer).issue(userAddress, 1n);
+    interactLog('info', `Issuing ${n} SSCN token(s)...`);
+    const tx = await currentContract.connect(signer).issue(userAddress, BigInt(n));
     interactLog('info', 'Tx: ' + tx.hash);
     await tx.wait();
-    interactLog('success', '1 SSCN token issued ✓');
-    showNotification('Token issued', 'success');
-    const bal = await currentContract.balanceOf(userAddress);
-    document.getElementById('infoBalance').textContent = bal.toString() + ' SSCN token(s)';
+    interactLog('success', `${n} SSCN token(s) issued ✓`);
+    showNotification(`${n} token(s) issued`, 'success');
+    await refreshBalances();
   } catch(e) {
     interactLog('error', e.message);
   }
