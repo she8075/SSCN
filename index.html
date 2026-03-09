@@ -754,8 +754,8 @@ footer {
     <li><a href="#deploy">Deploy</a></li>
     <li><a href="#interact">Interact</a></li>
   </ul>
-  <div style="display:flex;gap:8px;align-items:center" id="walletBtns">
-    <button id="connectBtn" onclick="handleConnect()" style="background:transparent;border:1px solid var(--accent);color:var(--accent);padding:8px 16px;font-family:var(--mono);font-size:11px;cursor:pointer;letter-spacing:1px;">Connect Wallet</button>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
     <button id="disconnectBtn" onclick="disconnectWallet()" style="display:none;background:transparent;border:1px solid var(--danger);color:var(--danger);padding:8px 16px;font-family:var(--mono);font-size:11px;cursor:pointer;letter-spacing:1px;">Disconnect</button>
   </div>
 </nav>
@@ -1149,30 +1149,9 @@ let countdownInterval = null;
 // ─── WALLET ──────────────────────────────────────────────────────────────────
 
 // Detect mobile
-function isMobile() {
-  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-}
-
-async function handleConnect() {
-  if (isMobile()) {
-    // On mobile: deep link to MetaMask app
-    const dappUrl = encodeURIComponent(window.location.href);
-    const metamaskUrl = 'https://metamask.app.link/dapp/' + window.location.host + window.location.pathname;
-    showNotification('Opening MetaMask app...', 'info');
-    window.location.href = metamaskUrl;
-    return;
-  }
-  await connectWallet();
-}
-
 async function connectWallet() {
   if (!window.ethereum) {
-    // If on mobile inside MetaMask browser, ethereum should be injected
-    if (isMobile()) {
-      showNotification('Please open this site inside the MetaMask browser', 'error');
-    } else {
-      showNotification('MetaMask not detected. Please install MetaMask.', 'error');
-    }
+    showNotification('MetaMask not detected. Please install MetaMask.', 'error');
     return;
   }
   try {
@@ -1194,22 +1173,15 @@ async function connectWallet() {
       } catch(e) { return; }
     }
 
-    setConnected(userAddress);
+    const short = userAddress.slice(0,6) + '...' + userAddress.slice(-4);
+    document.getElementById('connectBtn').textContent = short;
+    document.getElementById('connectBtn').classList.add('connected');
+    document.getElementById('disconnectBtn').style.display = 'inline-block';
+    showNotification('Wallet connected: ' + short, 'success');
     fetchEthPrice();
   } catch(e) {
     showNotification('Connection failed: ' + e.message, 'error');
   }
-}
-
-function setConnected(address) {
-  userAddress = address;
-  const short = address.slice(0,6) + '...' + address.slice(-4);
-  const btn = document.getElementById('connectBtn');
-  btn.textContent = short;
-  btn.classList.add('connected');
-  btn.style.borderColor = 'var(--accent)';
-  document.getElementById('disconnectBtn').style.display = 'inline-block';
-  showNotification('Wallet connected: ' + short, 'success');
 }
 
 function disconnectWallet() {
