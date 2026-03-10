@@ -344,6 +344,48 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
 .modal-input:focus { border-color: rgba(123,140,255,0.5); }
 .modal-hint { font-family: var(--mono); font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
 .modal-error { font-family: var(--mono); font-size: 10px; color: var(--danger); margin-top: 6px; min-height: 14px; }
+
+/* STEPPER */
+.stepper { display: flex; flex-direction: column; gap: 0; margin-bottom: 28px; }
+.step { display: flex; gap: 16px; align-items: flex-start; padding: 16px; border-left: 2px solid var(--border); margin-left: 16px; position: relative; }
+.step.active { border-left-color: var(--accent3); }
+.step.done { border-left-color: var(--accent); }
+.step.locked { opacity: 0.4; }
+.step-num { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; font-weight: 700; flex-shrink: 0; margin-left: -32px; background: var(--bg); }
+.step.active .step-num { border-color: var(--accent3); color: var(--accent3); background: rgba(123,140,255,0.1); }
+.step.done .step-num { border-color: var(--accent); color: var(--bg); background: var(--accent); }
+.step-content { flex: 1; padding-top: 4px; }
+.step-title { font-family: var(--mono); font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+.step.active .step-title { color: var(--accent3); }
+.step.done .step-title { color: var(--accent); }
+.step-desc { font-family: var(--mono); font-size: 10px; color: var(--text-muted); line-height: 1.6; }
+.step-status { font-family: var(--mono); font-size: 10px; margin-top: 4px; }
+
+/* STEPPER */
+.stepper { display: flex; gap: 0; margin-bottom: 28px; position: relative; }
+.stepper::before { content: ''; position: absolute; top: 20px; left: 20px; right: 20px; height: 2px; background: var(--border); z-index: 0; }
+.step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; z-index: 1; }
+.step-circle { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--text-muted); transition: all 0.3s; }
+.step.active .step-circle { border-color: var(--accent3); color: var(--accent3); background: rgba(123,140,255,0.1); box-shadow: 0 0 12px rgba(123,140,255,0.3); }
+.step.done .step-circle { border-color: var(--accent); color: var(--bg); background: var(--accent); }
+.step.locked .step-circle { opacity: 0.3; }
+.step-label { font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); text-align: center; line-height: 1.4; }
+.step.active .step-label { color: var(--accent3); }
+.step.done .step-label { color: var(--accent); }
+.step.locked .step-label { opacity: 0.3; }
+.step-connector { flex: 1; height: 2px; background: var(--border); align-self: center; margin-top: -28px; }
+.step-connector.done { background: var(--accent); }
+
+/* STEP PANELS */
+.step-panel { display: none; background: var(--bg); border: 1px solid var(--border); padding: 20px; margin-bottom: 16px; }
+.step-panel.active { display: block; border-color: rgba(123,140,255,0.3); }
+.step-panel.done { display: block; border-color: rgba(0,255,180,0.2); background: rgba(0,255,180,0.02); }
+.step-panel-title { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+.step-panel.active .step-panel-title { color: var(--accent3); }
+.step-panel.done .step-panel-title { color: var(--accent); }
+.step-done-msg { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+.step-done-detail { font-family: var(--mono); font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+
 </style>
 </head>
 <body>
@@ -374,6 +416,64 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
 <!--  PANEL ISSUER                                                  -->
 <!-- ══════════════════════════════════════════════════════════════ -->
 <div class="panel active" id="panelIssuer">
+
+  <!-- WORKFLOW STEPPER -->
+  <div class="section-header" style="padding-top:24px">
+    <span class="section-num">00</span>
+    <span class="section-title">Issuance Workflow</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="stepper" id="issuerStepper">
+    <div class="step active" id="step1">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-title">Deploy Contract</div>
+        <div class="step-desc">Set barrier, coupon and maturity → deploy on-chain.<br>S₀ is read automatically from Chainlink at deployment.</div>
+        <div class="step-status" id="step1Status"></div>
+      </div>
+    </div>
+    <div class="step locked" id="step2">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-title">Fund the Contract</div>
+        <div class="step-desc">Mint USDC → Approve & Deposit.<br>Required: $1,100 per token to be issued (capital + coupon).</div>
+        <div class="step-status" id="step2Status"></div>
+      </div>
+    </div>
+    <div class="step locked" id="step3">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-title">Publish Term Sheet to Investor</div>
+        <div class="step-desc">Send the contract address to the investor.<br>They will review the term sheet and sign their subscription on-chain.</div>
+        <div class="step-status" id="step3Status"></div>
+      </div>
+    </div>
+    <div class="step locked" id="step4">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-title">Wait for Investor Subscription</div>
+        <div class="step-desc">Investor reviews and signs subscribe() on-chain.<br>Issue Token(s) becomes available once subscribed.</div>
+        <div class="step-status" id="step4Status"></div>
+      </div>
+    </div>
+    <div class="step locked" id="step5">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-title">Issue Token(s)</div>
+        <div class="step-desc">Call issue() → tokens appear in investor wallet.</div>
+        <div class="step-status" id="step5Status"></div>
+      </div>
+    </div>
+    <div class="step locked" id="step6">
+      <div class="step-num">6</div>
+      <div class="step-content">
+        <div class="step-title">Settle at Maturity</div>
+        <div class="step-desc">Call settleAtMaturity() once maturity is reached.<br>Chainlink reads S(T) → payoff calculated on-chain.</div>
+        <div class="step-status" id="step6Status"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- PRICER -->
   <div class="section-header">
@@ -534,13 +634,40 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
     <div class="section-line"></div>
   </div>
 
-  <div class="contract-input">
-    <input type="text" id="issuerContractAddress" placeholder="0x... — paste contract address" value="0xf9588A62fdf90957E9A6Bb23bf8f03Ec95b4458C">
+  <!-- CONTRACT LOAD -->
+  <div class="contract-input" style="margin-bottom:24px">
+    <input type="text" id="issuerContractAddress" placeholder="0x... — paste or deploy above" value="0xf9588A62fdf90957E9A6Bb23bf8f03Ec95b4458C">
     <button class="btn btn-issuer" onclick="loadIssuerContract(document.getElementById('issuerContractAddress').value)">Load</button>
   </div>
 
+  <!-- STEPPER -->
+  <div class="stepper" id="issuerStepper">
+    <div class="step locked" id="step1">
+      <div class="step-circle">1</div>
+      <div class="step-label">Deploy /<br>Load</div>
+    </div>
+    <div class="step locked" id="step2">
+      <div class="step-circle">2</div>
+      <div class="step-label">Mint &amp;<br>Deposit</div>
+    </div>
+    <div class="step locked" id="step3">
+      <div class="step-circle">3</div>
+      <div class="step-label">Publish to<br>Investor</div>
+    </div>
+    <div class="step locked" id="step4">
+      <div class="step-circle">4</div>
+      <div class="step-label">Issue<br>Tokens</div>
+    </div>
+    <div class="step locked" id="step5">
+      <div class="step-circle">5</div>
+      <div class="step-label">Settle at<br>Maturity</div>
+    </div>
+  </div>
+
   <div id="issuerContractInfo" class="contract-info">
-    <div class="info-grid">
+
+    <!-- CONTRACT STATUS GRID -->
+    <div class="info-grid" style="margin-bottom:24px">
       <div class="info-item"><div class="info-item-label">State</div><div class="info-item-value" id="issuerInfoState">—</div></div>
       <div class="info-item"><div class="info-item-label">S₀</div><div class="info-item-value" id="issuerInfoS0">—</div></div>
       <div class="info-item"><div class="info-item-label">Barrier</div><div class="info-item-value orange" id="issuerInfoBarrier">—</div></div>
@@ -553,52 +680,89 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
       </div>
     </div>
 
-    <!-- Token amount -->
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;background:var(--bg);border:1px solid var(--border);padding:16px">
-      <div>
-        <div class="input-label" style="margin-bottom:4px">Number of tokens</div>
-        <input type="number" id="tokenAmount" value="1" min="1" max="100" oninput="updateAmountDisplay()" style="width:100px;font-size:20px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono)">
+    <!-- STEP 2 — MINT & DEPOSIT -->
+    <div class="step-panel" id="stepPanel2">
+      <div class="step-panel-title">Step 2 — Fund the contract</div>
+      <div id="stepPanel2Done" style="display:none">
+        <div class="step-done-msg">✅ Contract fully funded</div>
+        <div class="step-done-detail" id="stepPanel2Detail"></div>
       </div>
-      <div style="color:var(--text-muted);font-family:var(--mono);font-size:13px;padding-top:20px">
-        × $1,100 = <span id="totalAmount" style="color:var(--accent);font-size:18px;font-weight:700">$1,100</span> USDC required
-      </div>
-    </div>
-
-    <!-- Investor address -->
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;background:var(--bg);border:1px solid var(--border);padding:16px">
-      <div style="flex:1">
-        <div class="input-label" style="margin-bottom:4px">Investor address (for Issue Token)</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="text" id="investorAddress" placeholder="0x... (leave empty to use connected wallet)" style="flex:1;font-family:var(--mono);font-size:12px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">
-          <button onclick="document.getElementById('investorAddress').value=userAddress||''" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);font-family:var(--mono);font-size:10px;padding:8px 12px;cursor:pointer;white-space:nowrap;">Use my wallet</button>
+      <div id="stepPanel2Form">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;background:var(--surface2);border:1px solid var(--border);padding:14px">
+          <div>
+            <div class="input-label" style="margin-bottom:4px">Number of tokens</div>
+            <input type="number" id="tokenAmount" value="1" min="1" max="100" oninput="updateAmountDisplay()" style="width:100px;font-size:20px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono)">
+          </div>
+          <div style="color:var(--text-muted);font-family:var(--mono);font-size:13px;padding-top:20px">
+            × $1,100 = <span id="totalAmount" style="color:var(--accent);font-size:18px;font-weight:700">$1,100</span> USDC required
+          </div>
+        </div>
+        <div class="actions-row">
+          <button class="btn btn-issuer" onclick="mintUSDC()" id="btnMint">Mint USDC</button>
+          <button class="btn btn-issuer" onclick="approveAndDeposit()" id="btnDeposit">Approve &amp; Deposit</button>
         </div>
       </div>
     </div>
 
-    <!-- Publish contract to investor -->
-    <div style="margin-bottom:12px;background:var(--bg);border:1px solid rgba(123,140,255,0.2);padding:16px">
-      <div class="input-label" style="margin-bottom:8px;color:var(--accent3)">Publish contract to investor</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <input type="text" id="publishInvestorAddr" placeholder="0x... investor address" style="flex:1;font-family:var(--mono);font-size:12px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">
-        <button onclick="publishToInvestor()" class="btn btn-issuer" style="white-space:nowrap">📤 Publish</button>
+    <!-- STEP 3 — PUBLISH TO INVESTOR -->
+    <div class="step-panel" id="stepPanel3">
+      <div class="step-panel-title">Step 3 — Publish term sheet to investor</div>
+      <div id="stepPanel3Done" style="display:none">
+        <div class="step-done-msg">✅ Published — waiting for investor subscription</div>
+        <div class="step-done-detail" id="stepPanel3Detail"></div>
       </div>
-      <div id="publishStatus" style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:6px;min-height:14px"></div>
-      <div id="subscriptionStatus" style="font-family:var(--mono);font-size:11px;margin-top:8px;min-height:14px"></div>
+      <div id="stepPanel3Form">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:12px;line-height:1.8">
+          The contract is funded. You can now send the term sheet to your investor.<br>
+          They will review and sign their subscription on-chain before you issue tokens.
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="publishInvestorAddr" placeholder="0x... investor wallet address" style="flex:1;font-family:var(--mono);font-size:12px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">
+          <button onclick="publishToInvestor()" class="btn btn-issuer" style="white-space:nowrap">📤 Publish</button>
+        </div>
+        <div id="publishStatus" style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:8px;min-height:14px"></div>
+        <div id="subscriptionStatus" style="font-family:var(--mono);font-size:11px;margin-top:8px;min-height:14px"></div>
+      </div>
     </div>
 
-    <div class="actions-row">
-      <button class="btn btn-issuer" onclick="mintUSDC()" id="btnMint">Mint USDC</button>
-      <button class="btn btn-issuer" onclick="approveAndDeposit()" id="btnDeposit">Approve & Deposit</button>
-      <button class="btn btn-issuer" onclick="openIssueModal()" id="btnIssue">Issue Token(s)</button>
-      <button class="btn btn-primary" onclick="settle()" id="btnSettle">Settle at Maturity</button>
-      <a id="etherscanLinkIssuer" href="#" target="_blank" style="text-decoration:none">
-        <button class="btn btn-secondary">↗ Etherscan</button>
-      </a>
+    <!-- STEP 4 — ISSUE TOKENS -->
+    <div class="step-panel" id="stepPanel4">
+      <div class="step-panel-title">Step 4 — Issue tokens to investor</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:12px;line-height:1.8">
+        The investor has subscribed. You can now issue the tokens to their wallet.
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;background:var(--surface2);border:1px solid var(--border);padding:14px">
+        <div style="flex:1">
+          <div class="input-label" style="margin-bottom:4px">Investor address (auto-filled from publish)</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="text" id="investorAddress" placeholder="0x..." style="flex:1;font-family:var(--mono);font-size:12px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);color:var(--text)">
+            <button onclick="document.getElementById('investorAddress').value=userAddress||''" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);font-family:var(--mono);font-size:10px;padding:8px 12px;cursor:pointer;white-space:nowrap;">Use my wallet</button>
+          </div>
+        </div>
+      </div>
+      <div class="actions-row">
+        <button class="btn btn-issuer" onclick="openIssueModal()" id="btnIssue">Issue Token(s)</button>
+      </div>
+    </div>
+
+    <!-- STEP 5 — SETTLE -->
+    <div class="step-panel" id="stepPanel5">
+      <div class="step-panel-title">Step 5 — Settle at maturity</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:12px;line-height:1.8">
+        Once the maturity date is reached, trigger the settlement. The oracle will read the final ETH price and determine the payoff for each investor.
+      </div>
+      <div class="actions-row">
+        <button class="btn btn-primary" onclick="settle()" id="btnSettle">Settle at Maturity</button>
+        <a id="etherscanLinkIssuer" href="#" target="_blank" style="text-decoration:none">
+          <button class="btn btn-secondary">↗ Etherscan</button>
+        </a>
+      </div>
     </div>
 
     <div class="tx-log" id="interactLog">
       <div class="log-line">// Contract loaded — ready to interact</div>
     </div>
+
   </div>
 
 </div><!-- /panelIssuer -->
@@ -1086,6 +1250,7 @@ async function deployContract() {
     const addr = await contract.getAddress();
     deployLog('success', 'Deployed at: ' + addr);
     showNotification('Deployed: ' + addr.slice(0,10) + '...', 'success');
+    stepperOnDeploy(addr);
     document.getElementById('issuerContractAddress').value = addr;
   // Auto-sync to investor panel
   document.getElementById('investorContractAddress').value = addr;
@@ -1148,6 +1313,7 @@ async function loadIssuerContract(addr) {
     document.getElementById('issuerContractInfo').classList.add('visible');
     interactLog('info', 'Contract loaded: ' + addr);
     await refreshIssuerBalances();
+    await refreshStepperState();
   } catch(e) {
     interactLog('error', 'Failed to load: ' + e.message);
   }
@@ -1158,6 +1324,8 @@ async function refreshIssuerBalances() {
   try {
     const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
     const usdc = new ethers.Contract(MOCKUSDC_ADDR, ERC20_ABI, prov);
+    // Refresh stepper
+    await refreshStepperState();
     // Refresh funding
     try {
       const [funded, required, available] = await issuerContract.checkFunding();
@@ -1337,6 +1505,7 @@ async function settle() {
     const receipt = await tx.wait();
     interactLog('success', 'Settled ✓ Block: ' + receipt.blockNumber);
     showNotification('Contract settled', 'success');
+    stepperOnSettled();
     await loadIssuerContract(document.getElementById('issuerContractAddress').value);
   } catch(e) {
     interactLog('error', e.message);
@@ -1512,6 +1681,157 @@ function syncFromIssuer() {
   }
 }
 
+
+// ─── STEPPER ──────────────────────────────────────────────────────────────────
+function setStep(stepNum, status) {
+  // status: 'active' | 'done' | 'locked'
+  const el = document.getElementById('step' + stepNum);
+  if (!el) return;
+  el.className = 'step ' + status;
+}
+
+function setStepStatus(stepNum, msg, color) {
+  const el = document.getElementById('step' + stepNum + 'Status');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = color || 'var(--text-muted)';
+}
+
+function advanceStepper(reached) {
+  for (let i = 1; i <= 6; i++) {
+    if (i < reached) setStep(i, 'done');
+    else if (i === reached) setStep(i, 'active');
+    else setStep(i, 'locked');
+  }
+}
+
+// Call after deploy
+function stepperOnDeploy(addr) {
+  advanceStepper(2);
+  setStepStatus(1, '\u2713 Deployed: ' + addr.slice(0,10) + '...', 'var(--accent)');
+}
+
+// Call after deposit
+function stepperOnDeposit(amount) {
+  advanceStepper(3);
+  setStepStatus(2, '\u2713 $' + (amount/1e6).toLocaleString() + ' USDC deposited', 'var(--accent)');
+}
+
+// Call after publish
+function stepperOnPublish(investorAddr) {
+  advanceStepper(4);
+  setStepStatus(3, '\u2713 Published to ' + investorAddr.slice(0,8) + '...', 'var(--accent)');
+}
+
+// Call when subscription detected
+function stepperOnSubscribed(investorAddr) {
+  advanceStepper(5);
+  setStepStatus(4, '\u2713 ' + investorAddr.slice(0,8) + '... subscribed on-chain', 'var(--accent)');
+}
+
+// Call after issue
+function stepperOnIssued(n) {
+  advanceStepper(6);
+  setStepStatus(5, '\u2713 ' + n + ' token(s) issued', 'var(--accent)');
+}
+
+// Call after settle
+function stepperOnSettled() {
+  for (let i = 1; i <= 6; i++) setStep(i, 'done');
+  setStepStatus(6, '\u2713 Settled — investors can now redeem', 'var(--accent)');
+}
+
+
+// ─── STEPPER LOGIC ────────────────────────────────────────────────────────────
+
+function updateStepper(activeStep) {
+  // activeStep: 1=deploy, 2=fund, 3=publish, 4=issue, 5=settle
+  const steps = [1,2,3,4,5];
+  steps.forEach(i => {
+    const el = document.getElementById('step' + i);
+    const panel = document.getElementById('stepPanel' + i);
+    if (!el) return;
+    el.classList.remove('active','done','locked');
+    if (i < activeStep) {
+      el.classList.add('done');
+      el.querySelector('.step-circle').textContent = '✓';
+    } else if (i === activeStep) {
+      el.classList.add('active');
+      el.querySelector('.step-circle').textContent = String(i);
+    } else {
+      el.classList.add('locked');
+      el.querySelector('.step-circle').textContent = String(i);
+    }
+    if (panel) {
+      panel.classList.remove('active','done');
+      if (i < activeStep) panel.classList.add('done');
+      else if (i === activeStep) panel.classList.add('active');
+    }
+  });
+  // step1 has no panel — mark stepper step1 as done once contract loaded
+  const s1 = document.getElementById('step1');
+  if (s1 && activeStep >= 2) {
+    s1.classList.remove('active','locked');
+    s1.classList.add('done');
+    s1.querySelector('.step-circle').textContent = '✓';
+  }
+}
+
+async function getIssuerStep() {
+  // Determine which step we're on based on contract state
+  if (!issuerContract) return 1;
+  try {
+    const state = await issuerContract.currentState();
+    if (Number(state) === 1) return 5; // SETTLED
+    // Check if tokens issued
+    const supply = await issuerContract.totalSupply();
+    if (Number(supply) > 0) return 5; // tokens issued, wait for settle
+    // Check funding
+    const [funded] = await issuerContract.checkFunding();
+    if (!funded) return 2;
+    // Check if published (localStorage)
+    const publishAddr = document.getElementById('publishInvestorAddr')?.value.trim();
+    const contractAddr = document.getElementById('issuerContractAddress').value.trim();
+    // Check if any investor subscribed
+    const count = await issuerContract.subscriberCount();
+    if (Number(count) > 0) return 4;
+    return 3;
+  } catch(e) { return 2; }
+}
+
+async function refreshStepperState() {
+  const step = await getIssuerStep();
+  updateStepper(step);
+  // Update step 2 done message
+  if (step > 2) {
+    try {
+      const [,required,available] = await issuerContract.checkFunding();
+      document.getElementById('stepPanel2Done').style.display = 'block';
+      document.getElementById('stepPanel2Form').style.display = 'none';
+      document.getElementById('stepPanel2Detail').textContent =
+        'Available: $' + (Number(available)/1e6).toFixed(2) + ' / Required: $' + (Number(required)/1e6).toFixed(2);
+    } catch(e) {}
+  } else {
+    document.getElementById('stepPanel2Done').style.display = 'none';
+    document.getElementById('stepPanel2Form').style.display = 'block';
+  }
+  // Update step 3
+  if (step > 3) {
+    document.getElementById('stepPanel3Done').style.display = 'block';
+    document.getElementById('stepPanel3Form').style.display = 'none';
+    const investorAddr = document.getElementById('publishInvestorAddr')?.value.trim();
+    document.getElementById('stepPanel3Detail').textContent =
+      investorAddr ? 'Investor ' + investorAddr.slice(0,8) + '... subscribed' : 'Investor subscribed';
+    // Auto-fill investor address in step 4
+    if (investorAddr) document.getElementById('investorAddress').value = investorAddr;
+  } else {
+    const d = document.getElementById('stepPanel3Done');
+    const f = document.getElementById('stepPanel3Form');
+    if (d) d.style.display = 'none';
+    if (f) f.style.display = 'block';
+  }
+}
+
 // ─── PUBLISH & SUBSCRIBE FLOW ─────────────────────────────────────────────────
 
 function publishToInvestor() {
@@ -1526,6 +1846,7 @@ function publishToInvestor() {
   document.getElementById('publishStatus').style.color = 'var(--accent)';
   startSubscriptionPolling(contractAddr, investorAddr);
   showNotification('Contract published to investor', 'success');
+  stepperOnPublish(investorAddr);
 }
 
 let subscriptionPollInterval = null;
@@ -1542,6 +1863,7 @@ function startSubscriptionPolling(contractAddr, investorAddr) {
         const date = new Date(Number(ts) * 1000).toLocaleString();
         el.innerHTML = '\u2705 Investor <span style="color:var(--accent3)">' + investorAddr.slice(0,8) + '...</span> subscribed on ' + date + ' \u2014 you can now Issue tokens';
         el.style.color = 'var(--accent)';
+        stepperOnSubscribed(investorAddr);
         clearInterval(subscriptionPollInterval);
       } else {
         el.textContent = '\u23f3 Waiting for investor subscription...';
@@ -1585,6 +1907,17 @@ async function openTermSheet() {
     document.getElementById('ts_coupon').textContent = coupon.toFixed(1) + '%/yr \u2014 guaranteed';
     document.getElementById('ts_maturity').textContent = maturity;
     document.getElementById('ts_subs').textContent = subs + ' investor(s)';
+    // Funding status
+    try {
+      const [funded, required, available] = await contract.checkFunding();
+      const req = Number(required)/1e6, avail = Number(available)/1e6;
+      const fundEl = document.getElementById('ts_funding');
+      fundEl.textContent = funded ? '\u2705 Fully funded' : '\u26a0\ufe0f Underfunded';
+      fundEl.style.color = funded ? 'var(--accent)' : 'var(--danger)';
+      document.getElementById('ts_funding_detail').textContent = '$' + avail.toFixed(2) + ' available / $' + req.toFixed(2) + ' required';
+    } catch(e) {
+      document.getElementById('ts_funding').textContent = 'Unable to check';
+    }
     document.getElementById('subscribeError').textContent = '';
     document.getElementById('termSheetModal').classList.remove('hidden');
   } catch(e) { showNotification('Failed to load term sheet: ' + e.message, 'error'); }
@@ -1697,6 +2030,9 @@ switchTab = function(tab) {
         <div class="pricer-row"><span class="pricer-label">Settlement</span><span class="pricer-value">MockUSDC (ERC-20)</span></div>
         <div class="pricer-row"><span class="pricer-label">Compliance</span><span class="pricer-value">ERC-3643 (T-REX)</span></div>
         <div class="pricer-row"><span class="pricer-label">Current subscribers</span><span class="pricer-value" id="ts_subs">—</span></div>
+        <div class="pricer-row"><span class="pricer-label">Funding status</span><span class="pricer-value" id="ts_funding">—</span></div>
+        <div class="pricer-row"><span class="pricer-label">Funding status</span><span class="pricer-value" id="ts_funding">—</span></div>
+        <div class="pricer-row"><span class="pricer-label">Available / Required</span><span class="pricer-value" style="font-size:12px" id="ts_funding_detail">—</span></div>
       </div>
       <div style="background:rgba(255,68,102,0.05);border:1px solid rgba(255,68,102,0.2);padding:12px;font-family:var(--mono);font-size:10px;color:var(--text-muted);line-height:1.8">
         ⚠ By subscribing, you confirm that you have read and accepted the above terms.<br>
