@@ -1288,6 +1288,7 @@ const SSCN_ABI = [
   'function issue(address _investor, uint256 _amount) external',
   'function settleAtMaturity() external',
   'function finalETHPrice() view returns (uint256)',
+  'function checkFunding() view returns (bool funded, uint256 required, uint256 available)',
   'function redeem() external',
   'event Settled(uint256 finalPrice, bool barrierBreached)',
   'event CouponAndCapitalPaid(address indexed investor, uint256 amount)'
@@ -1578,6 +1579,7 @@ function applyPreset() {
 async function deployContract() {
   if (!signer) { showNotification('Connect wallet first', 'error'); return; }
 
+
   const barrierPct = document.getElementById('depBarrier').value;
   const couponBps = document.getElementById('depCoupon').value;
   const maturityDelay = document.getElementById('depMaturity').value;
@@ -1662,6 +1664,8 @@ async function loadContract(addr) {
         currentContract.couponPerToken(),
         currentContract.finalETHPrice()
       ]);
+      // Hide funding when settled
+      document.getElementById('fundingItem').style.display = 'none';
       const cap = Number(capital) / 1e6;
       const coup = Number(coupon) / 1e6;
       const sT = Number(finalPrice) / 1e8;
@@ -1673,6 +1677,16 @@ async function loadContract(addr) {
       document.getElementById('infoPayoff').textContent = '$' + (cap + coup).toFixed(2);
     } else {
       document.getElementById('settledInfo').style.display = 'none';
+      // checkFunding for active contracts
+      try {
+        const [funded, required, available] = await currentContract.checkFunding();
+        document.getElementById('fundingItem').style.display = '';
+        const req = Number(required) / 1e6;
+        const avail = Number(available) / 1e6;
+        document.getElementById('infoFunding').textContent = funded ? '✅ Fully funded' : '⚠️ Underfunded';
+        document.getElementById('infoFunding').style.color = funded ? 'var(--accent)' : 'var(--danger)';
+        document.getElementById('infoFundingDetail').textContent = `Available $${avail.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} / Required $${req.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+      } catch(e) {}
     }
 
     document.getElementById('contractInfo').classList.add('visible');
@@ -1721,12 +1735,27 @@ async function refreshBalances() {
     if (currentContract) {
       const sscnBal = await currentContract.balanceOf(userAddress);
       document.getElementById('infoBalance').textContent = sscnBal.toString() + ' SSCN token(s)';
+      const addrEl = document.getElementById('infoBalanceAddr');
+      if (addrEl) addrEl.textContent = userAddress ? userAddress.slice(0,8) + '...' + userAddress.slice(-6) : '';
+      // Also refresh funding status
+      try {
+        const [funded, required, available] = await currentContract.checkFunding();
+        const fundingItem = document.getElementById('fundingItem');
+        if (fundingItem && fundingItem.style.display !== 'none') {
+          const req = Number(required) / 1e6;
+          const avail = Number(available) / 1e6;
+          document.getElementById('infoFunding').textContent = funded ? '✅ Fully funded' : '⚠️ Underfunded';
+          document.getElementById('infoFunding').style.color = funded ? 'var(--accent)' : 'var(--danger)';
+          document.getElementById('infoFundingDetail').textContent = `Available $${avail.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} / Required $${req.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+        }
+      } catch(e) {}
     }
   } catch(e) {}
 }
 
 async function mintUSDC() {
   if (!signer) { showNotification('Connect wallet first', 'error'); return; }
+
   try {
     const n = getTokenAmount();
     const amount = BigInt(n) * 1100000000n;
