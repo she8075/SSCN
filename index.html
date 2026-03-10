@@ -6,9 +6,162 @@
 <title>SSCN — Structured Security Crypto Note</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js">
+// ─── ISSUE MODAL ──────────────────────────────────────────────────────────────
+function openIssueModal() {
+  if (!signer || !issuerContract) { showNotification('Load a contract first', 'error'); return; }
+  const n = getTokenAmount();
+  document.getElementById('modalTokenCount').textContent = n + ' token(s)';
+  document.getElementById('modalUsdcAmt').textContent = '$' + (n * 1100).toLocaleString();
+  const contractAddr = document.getElementById('issuerContractAddress').value.trim();
+  document.getElementById('modalContractAddr').textContent = contractAddr ? contractAddr.slice(0,10) + '...' + contractAddr.slice(-8) : '—';
+  document.getElementById('modalError').textContent = '';
+  // Pre-fill with investor address field if already set, else empty
+  const existing = document.getElementById('investorAddress').value.trim();
+  document.getElementById('modalInvestorAddr').value = existing && ethers.isAddress(existing) ? existing : '';
+  document.getElementById('issueModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('modalInvestorAddr').focus(), 100);
+}
+
+function closeIssueModal() {
+  document.getElementById('issueModal').classList.add('hidden');
+  document.getElementById('modalError').textContent = '';
+}
+
+// Close on overlay click
+document.getElementById('issueModal').addEventListener('click', function(e) {
+  if (e.target === this) closeIssueModal();
+});
+
+async function confirmIssue() {
+  const addr = document.getElementById('modalInvestorAddr').value.trim();
+  const errEl = document.getElementById('modalError');
+
+  if (!addr) { errEl.textContent = 'Please enter an investor address'; return; }
+  if (!ethers.isAddress(addr)) { errEl.textContent = 'Invalid Ethereum address'; return; }
+
+  errEl.textContent = '';
+  // Sync back to the hidden field
+  document.getElementById('investorAddress').value = addr;
+  closeIssueModal();
+  await issueToken();
+}
+
+function syncFromIssuer() {
+  const addr = document.getElementById('issuerContractAddress').value.trim();
+  if (addr && addr.length > 10) {
+    document.getElementById('investorContractAddress').value = addr;
+    loadInvestorContract(addr);
+    showNotification('Contract synced from Issuer', 'success');
+  } else {
+    showNotification('No contract loaded in Issuer tab', 'error');
+  }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+// ─── ISSUE MODAL ──────────────────────────────────────────────────────────────
+function openIssueModal() {
+  if (!signer || !issuerContract) { showNotification('Load a contract first', 'error'); return; }
+  const n = getTokenAmount();
+  document.getElementById('modalTokenCount').textContent = n + ' token(s)';
+  document.getElementById('modalUsdcAmt').textContent = '$' + (n * 1100).toLocaleString();
+  const contractAddr = document.getElementById('issuerContractAddress').value.trim();
+  document.getElementById('modalContractAddr').textContent = contractAddr ? contractAddr.slice(0,10) + '...' + contractAddr.slice(-8) : '—';
+  document.getElementById('modalError').textContent = '';
+  // Pre-fill with investor address field if already set, else empty
+  const existing = document.getElementById('investorAddress').value.trim();
+  document.getElementById('modalInvestorAddr').value = existing && ethers.isAddress(existing) ? existing : '';
+  document.getElementById('issueModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('modalInvestorAddr').focus(), 100);
+}
+
+function closeIssueModal() {
+  document.getElementById('issueModal').classList.add('hidden');
+  document.getElementById('modalError').textContent = '';
+}
+
+// Close on overlay click
+document.getElementById('issueModal').addEventListener('click', function(e) {
+  if (e.target === this) closeIssueModal();
+});
+
+async function confirmIssue() {
+  const addr = document.getElementById('modalInvestorAddr').value.trim();
+  const errEl = document.getElementById('modalError');
+
+  if (!addr) { errEl.textContent = 'Please enter an investor address'; return; }
+  if (!ethers.isAddress(addr)) { errEl.textContent = 'Invalid Ethereum address'; return; }
+
+  errEl.textContent = '';
+  // Sync back to the hidden field
+  document.getElementById('investorAddress').value = addr;
+  closeIssueModal();
+  await issueToken();
+}
+
+function syncFromIssuer() {
+  const addr = document.getElementById('issuerContractAddress').value.trim();
+  if (addr && addr.length > 10) {
+    document.getElementById('investorContractAddress').value = addr;
+    loadInvestorContract(addr);
+    showNotification('Contract synced from Issuer', 'success');
+  } else {
+    showNotification('No contract loaded in Issuer tab', 'error');
+  }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js">
+// ─── ISSUE MODAL ──────────────────────────────────────────────────────────────
+function openIssueModal() {
+  if (!signer || !issuerContract) { showNotification('Load a contract first', 'error'); return; }
+  const n = getTokenAmount();
+  document.getElementById('modalTokenCount').textContent = n + ' token(s)';
+  document.getElementById('modalUsdcAmt').textContent = '$' + (n * 1100).toLocaleString();
+  const contractAddr = document.getElementById('issuerContractAddress').value.trim();
+  document.getElementById('modalContractAddr').textContent = contractAddr ? contractAddr.slice(0,10) + '...' + contractAddr.slice(-8) : '—';
+  document.getElementById('modalError').textContent = '';
+  // Pre-fill with investor address field if already set, else empty
+  const existing = document.getElementById('investorAddress').value.trim();
+  document.getElementById('modalInvestorAddr').value = existing && ethers.isAddress(existing) ? existing : '';
+  document.getElementById('issueModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('modalInvestorAddr').focus(), 100);
+}
+
+function closeIssueModal() {
+  document.getElementById('issueModal').classList.add('hidden');
+  document.getElementById('modalError').textContent = '';
+}
+
+// Close on overlay click
+document.getElementById('issueModal').addEventListener('click', function(e) {
+  if (e.target === this) closeIssueModal();
+});
+
+async function confirmIssue() {
+  const addr = document.getElementById('modalInvestorAddr').value.trim();
+  const errEl = document.getElementById('modalError');
+
+  if (!addr) { errEl.textContent = 'Please enter an investor address'; return; }
+  if (!ethers.isAddress(addr)) { errEl.textContent = 'Invalid Ethereum address'; return; }
+
+  errEl.textContent = '';
+  // Sync back to the hidden field
+  document.getElementById('investorAddress').value = addr;
+  closeIssueModal();
+  await issueToken();
+}
+
+function syncFromIssuer() {
+  const addr = document.getElementById('issuerContractAddress').value.trim();
+  if (addr && addr.length > 10) {
+    document.getElementById('investorContractAddress').value = addr;
+    loadInvestorContract(addr);
+    showNotification('Contract synced from Issuer', 'success');
+  } else {
+    showNotification('No contract loaded in Issuer tab', 'error');
+  }
+}
+</script>
 <style>
 :root {
   --bg: #080a0f;
@@ -178,6 +331,19 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
   .grid-2, .grid-3, .param-grid { grid-template-columns: 1fr; }
   .hero-stats { gap: 20px; }
 }
+
+/* MODAL */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 300; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.modal-overlay.hidden { display: none; }
+.modal { background: var(--surface); border: 1px solid var(--border-glow); padding: 32px; width: 100%; max-width: 480px; position: relative; }
+.modal-title { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent3); margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.modal-body { margin-bottom: 24px; }
+.modal-desc { font-family: var(--mono); font-size: 12px; color: var(--text-muted); line-height: 1.8; margin-bottom: 16px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.modal-input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 12px 14px; font-family: var(--mono); font-size: 12px; outline: none; margin-bottom: 8px; }
+.modal-input:focus { border-color: rgba(123,140,255,0.5); }
+.modal-hint { font-family: var(--mono); font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
+.modal-error { font-family: var(--mono); font-size: 10px; color: var(--danger); margin-top: 6px; min-height: 14px; }
 </style>
 </head>
 <body>
@@ -412,7 +578,7 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
     <div class="actions-row">
       <button class="btn btn-issuer" onclick="mintUSDC()" id="btnMint">Mint USDC</button>
       <button class="btn btn-issuer" onclick="approveAndDeposit()" id="btnDeposit">Approve & Deposit</button>
-      <button class="btn btn-issuer" onclick="issueToken()" id="btnIssue">Issue Token(s)</button>
+      <button class="btn btn-issuer" onclick="openIssueModal()" id="btnIssue">Issue Token(s)</button>
       <button class="btn btn-primary" onclick="settle()" id="btnSettle">Settle at Maturity</button>
       <a id="etherscanLinkIssuer" href="#" target="_blank" style="text-decoration:none">
         <button class="btn btn-secondary">↗ Etherscan</button>
@@ -504,7 +670,8 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
 
   <div class="contract-input">
     <input type="text" id="investorContractAddress" placeholder="0x... — paste contract address" value="0xf9588A62fdf90957E9A6Bb23bf8f03Ec95b4458C">
-    <button class="btn btn-secondary" onclick="loadInvestorContract(document.getElementById('investorContractAddress').value)">Load Contract</button>
+    <button class="btn btn-secondary" onclick="loadInvestorContract(document.getElementById('investorContractAddress').value)">Load</button>
+    <button class="btn btn-secondary" onclick="syncFromIssuer()" title="Copy active contract from Issuer tab" style="white-space:nowrap">↓ From Issuer</button>
   </div>
 
   <div id="investorContractInfo" class="contract-info">
@@ -889,6 +1056,8 @@ async function deployContract() {
     deployLog('success', 'Deployed at: ' + addr);
     showNotification('Deployed: ' + addr.slice(0,10) + '...', 'success');
     document.getElementById('issuerContractAddress').value = addr;
+  // Auto-sync to investor panel
+  document.getElementById('investorContractAddress').value = addr;
     document.getElementById('investorContractAddress').value = addr;
     await loadIssuerContract(addr);
   } catch(e) {
@@ -900,6 +1069,8 @@ async function deployContract() {
 async function loadIssuerContract(addr) {
   if (!addr || addr.length < 10) return;
   document.getElementById('issuerContractAddress').value = addr;
+  // Auto-sync to investor panel
+  document.getElementById('investorContractAddress').value = addr;
   document.getElementById('etherscanLinkIssuer').href = 'https://sepolia.etherscan.io/address/' + addr;
   try {
     const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
@@ -1258,6 +1429,86 @@ window.addEventListener('load', () => {
     loadInvestorContract('0xf9588A62fdf90957E9A6Bb23bf8f03Ec95b4458C');
   }, 500);
 });
+
+// ─── ISSUE MODAL ──────────────────────────────────────────────────────────────
+function openIssueModal() {
+  if (!signer || !issuerContract) { showNotification('Load a contract first', 'error'); return; }
+  const n = getTokenAmount();
+  document.getElementById('modalTokenCount').textContent = n + ' token(s)';
+  document.getElementById('modalUsdcAmt').textContent = '$' + (n * 1100).toLocaleString();
+  const contractAddr = document.getElementById('issuerContractAddress').value.trim();
+  document.getElementById('modalContractAddr').textContent = contractAddr ? contractAddr.slice(0,10) + '...' + contractAddr.slice(-8) : '—';
+  document.getElementById('modalError').textContent = '';
+  // Pre-fill with investor address field if already set, else empty
+  const existing = document.getElementById('investorAddress').value.trim();
+  document.getElementById('modalInvestorAddr').value = existing && ethers.isAddress(existing) ? existing : '';
+  document.getElementById('issueModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('modalInvestorAddr').focus(), 100);
+}
+
+function closeIssueModal() {
+  document.getElementById('issueModal').classList.add('hidden');
+  document.getElementById('modalError').textContent = '';
+}
+
+// Close on overlay click
+document.getElementById('issueModal').addEventListener('click', function(e) {
+  if (e.target === this) closeIssueModal();
+});
+
+async function confirmIssue() {
+  const addr = document.getElementById('modalInvestorAddr').value.trim();
+  const errEl = document.getElementById('modalError');
+
+  if (!addr) { errEl.textContent = 'Please enter an investor address'; return; }
+  if (!ethers.isAddress(addr)) { errEl.textContent = 'Invalid Ethereum address'; return; }
+
+  errEl.textContent = '';
+  // Sync back to the hidden field
+  document.getElementById('investorAddress').value = addr;
+  closeIssueModal();
+  await issueToken();
+}
+
+function syncFromIssuer() {
+  const addr = document.getElementById('issuerContractAddress').value.trim();
+  if (addr && addr.length > 10) {
+    document.getElementById('investorContractAddress').value = addr;
+    loadInvestorContract(addr);
+    showNotification('Contract synced from Issuer', 'success');
+  } else {
+    showNotification('No contract loaded in Issuer tab', 'error');
+  }
+}
 </script>
+
+<!-- ISSUE TOKEN MODAL -->
+<div class="modal-overlay hidden" id="issueModal">
+  <div class="modal">
+    <div class="modal-title">Issue Token(s) — Confirm Investor</div>
+    <div class="modal-body">
+      <div class="modal-desc">
+        Tokens will be issued to the address below.<br>
+        Make sure the investor is KYC-verified.
+      </div>
+      <div class="modal-hint">Investor address</div>
+      <input type="text" class="modal-input" id="modalInvestorAddr" placeholder="0x...">
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button onclick="document.getElementById('modalInvestorAddr').value=userAddress||''" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);font-family:var(--mono);font-size:10px;padding:6px 12px;cursor:pointer;">Use my wallet</button>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);padding:6px 0">or paste investor address</span>
+      </div>
+      <div class="modal-error" id="modalError"></div>
+      <div style="margin-top:16px;padding:12px;background:var(--bg);border:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--text-muted)">
+        <div style="margin-bottom:4px">Contract: <span style="color:var(--accent3)" id="modalContractAddr">—</span></div>
+        <div style="margin-bottom:4px">Tokens to issue: <span style="color:var(--accent)" id="modalTokenCount">—</span></div>
+        <div>USDC required: <span style="color:var(--accent)" id="modalUsdcAmt">—</span></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeIssueModal()">Cancel</button>
+      <button class="btn btn-issuer" onclick="confirmIssue()">Confirm & Issue</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
