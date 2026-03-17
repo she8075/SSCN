@@ -2325,11 +2325,6 @@ async function confirmSubscribe() {
   try {
     btn.textContent = '⟳ Signing...';
     btn.disabled = true;
-    const kyc = new ethers.Contract(MOCKKYC_ADDR, KYC_ABI, investorSigner);
-    investorLog('info', 'Verifying KYC...');
-    const kycTx = await kyc.verify(investorAddress);
-    await kycTx.wait();
-    investorLog('success', 'KYC verified ✓');
     const contract = new ethers.Contract(contractAddr, SSCN_ABI, investorSigner);
     investorLog('info', 'Signing subscription on-chain...');
     const tx = await contract.subscribe();
@@ -2345,7 +2340,9 @@ async function confirmSubscribe() {
     document.getElementById('subscribedInfo').textContent = 'Contract: ' + contractAddr.slice(0,10) + '... · Signed at ' + new Date().toLocaleString();
     await refreshInvestorBalances();
   } catch(e) {
-    errEl.textContent = e.message.includes('already subscribed') ? 'Already subscribed to this contract' : e.message.slice(0, 120);
+    errEl.textContent = e.message.includes('already subscribed') ? 'Already subscribed to this contract' :
+                        e.message.includes('not KYC') ? 'KYC not verified — issuer must verify your wallet first' :
+                        e.message.slice(0, 120);
     btn.textContent = 'Subscribe & Sign';
     btn.disabled = false;
     investorLog('error', e.message);
