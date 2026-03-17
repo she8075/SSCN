@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SSCN v4 — Structured Security Crypto Note</title>
+<title>SSCN — Structured Security Crypto Note</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -280,7 +280,7 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
 
 <!-- NAV -->
 <nav>
-  <div class="nav-logo">SSCN <span>/ Structured Security Crypto Note v4</span></div>
+  <div class="nav-logo">SSCN <span>/ Structured Security Crypto Note</span></div>
   <div class="nav-wallet" id="navWalletIssuer">
     <span style="font-family:var(--mono);font-size:10px;color:var(--accent3);letter-spacing:1px;margin-right:4px">EMETTEUR</span>
     <button id="issuerConnectBtn" onclick="connectWalletForTab('issuer')">Connect Wallet</button>
@@ -325,8 +325,10 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
     <span class="section-num">00</span>
     <span class="section-title">Issuance Workflow</span>
     <div class="section-line"></div>
+    <button onclick="toggleWorkflow()" id="workflowToggleBtn" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);font-family:var(--mono);font-size:10px;padding:6px 14px;cursor:pointer;letter-spacing:1px;white-space:nowrap;flex-shrink:0">▼ Show</button>
   </div>
 
+  <div id="workflowStepperWrapper" style="display:none">
   <div class="stepper" id="workflowStepper">
     <div class="step active" id="wf-step1">
       <div class="step-num">1</div>
@@ -377,13 +379,16 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
       </div>
     </div>
   </div>
+  </div><!-- /workflowStepperWrapper -->
 
   <!-- PRICER -->
   <div class="section-header" style="padding-top:24px">
     <span class="section-num">01</span>
     <span class="section-title">Pricer — Black-Scholes</span>
     <div class="section-line"></div>
+    <button onclick="togglePricer()" id="pricerToggleBtn" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);font-family:var(--mono);font-size:10px;padding:6px 14px;cursor:pointer;letter-spacing:1px;white-space:nowrap;flex-shrink:0">▼ Show</button>
   </div>
+  <div id="pricerWrapper" style="display:none">
   <div class="grid-2">
     <div class="card">
       <div class="card-title">Market Parameters</div>
@@ -428,11 +433,12 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
       </div>
     </div>
   </div>
+  </div><!-- /pricerWrapper -->
 
   <!-- DEPLOY -->
   <div class="section-header">
     <span class="section-num">02</span>
-    <span class="section-title">Deploy New Contract v4</span>
+    <span class="section-title">Deploy New Contract</span>
     <div class="section-line"></div>
   </div>
   <div class="grid-2">
@@ -459,7 +465,7 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
         <div style="margin-top:4px">MockKYC</div><div style="color:var(--accent3)">0x1DDd83f21D764369807a789CFFe60a651E011aF4</div>
         <div style="margin-top:4px">MockUSDC</div><div style="color:var(--accent3)">0x19D76090915c4f97fF2075C3AC0822AbE1898E91</div>
       </div>
-      <button class="btn btn-issuer" onclick="deployContract()">Deploy Contract v4</button>
+      <button class="btn btn-issuer" onclick="deployContract()">Deploy Contract</button>
       <div class="tx-log" id="deployLog"><div class="log-line">// Ready to deploy — connect wallet first</div></div>
     </div>
     <div class="card">
@@ -833,7 +839,7 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
 <!-- TERM SHEET MODAL -->
 <div class="modal-overlay hidden" id="termSheetModal">
   <div class="modal" style="max-width:560px">
-    <div class="modal-title" style="color:var(--accent)">📋 Term Sheet — SSCN Reverse Convertible v4</div>
+    <div class="modal-title" style="color:var(--accent)">📋 Term Sheet — SSCN Reverse Convertible</div>
     <div class="modal-body">
       <div class="modal-desc" style="color:var(--text-muted);margin-bottom:16px">
         Review carefully. By subscribing, you deposit <strong id="ts_deposit_amount" style="color:var(--accent)">—</strong> USDC on-chain — locked until maturity.
@@ -960,6 +966,22 @@ function stateLabel(s) {
   if (Number(s) === 0) return 'SUBSCRIPTION';
   if (Number(s) === 1) return 'ACTIVE';
   return 'SETTLED';
+}
+
+function toggleWorkflow() {
+  const wrapper = document.getElementById('workflowStepperWrapper');
+  const btn = document.getElementById('workflowToggleBtn');
+  const isHidden = wrapper.style.display === 'none';
+  wrapper.style.display = isHidden ? 'block' : 'none';
+  btn.textContent = isHidden ? '▲ Hide' : '▼ Show';
+}
+
+function togglePricer() {
+  const wrapper = document.getElementById('pricerWrapper');
+  const btn = document.getElementById('pricerToggleBtn');
+  const isHidden = wrapper.style.display === 'none';
+  wrapper.style.display = isHidden ? 'block' : 'none';
+  btn.textContent = isHidden ? '▲ Hide' : '▼ Show';
 }
 
 // ─── TAB SWITCHING ────────────────────────────────────────────────────────────
@@ -1282,7 +1304,7 @@ async function deployContract() {
   const matDelay   = document.getElementById('depMaturity').value;
   const maxSupply  = document.getElementById('depMaxSupply').value;
   const subDelay   = document.getElementById('depSubDelay').value;
-  deployLog('info', `Deploying v4: barrier=${barrierPct}, coupon=${couponBps}bps, maturity=${matDelay}s, maxSupply=${maxSupply}, subPeriod=${subDelay}s`);
+  deployLog('info', `Deploying: barrier=${barrierPct}, coupon=${couponBps}bps, maturity=${matDelay}s, maxSupply=${maxSupply}, subPeriod=${subDelay}s`);
   try {
     const factory = new ethers.ContractFactory(SSCN_ABI, SSCN_BYTECODE, issuerSigner);
     const contract = await factory.deploy(CHAINLINK_ADDR, MOCKKYC_ADDR, MOCKUSDC_ADDR, couponBps, matDelay, barrierPct, maxSupply, subDelay);
@@ -1525,15 +1547,26 @@ async function closeSubscription() {
 async function issueAll() {
   if (!issuerSigner || !issuerContract) { showNotification('Connect issuer wallet first', 'error'); return; }
   try {
-    // First KYC verify all subscribers
+    // Check state — if still SUBSCRIPTION, close it first
+    const state = Number(await issuerContract.currentState());
+    if (state === 0) {
+      interactLog('info', 'Closing subscription period first...');
+      const closeTx = await issuerContract.connect(issuerSigner).closeSubscription();
+      await closeTx.wait();
+      interactLog('success', 'Subscription closed ✓ — state: ACTIVE');
+    }
+    // KYC verify all subscribers
     const count = await issuerContract.getSubscriberCount();
     const kyc = new ethers.Contract(MOCKKYC_ADDR, KYC_ABI, issuerSigner);
     for (let i = 0; i < Number(count); i++) {
       const [addr, amount] = await issuerContract.getSubscriberAt(i);
       if (Number(amount) === 0) continue;
-      interactLog('info', 'KYC: ' + addr.slice(0,8) + '...');
-      const kycTx = await kyc.verify(addr);
-      await kycTx.wait();
+      const already = await kyc.isVerified(addr).catch(() => false);
+      if (!already) {
+        interactLog('info', 'KYC: ' + addr.slice(0,8) + '...');
+        const kycTx = await kyc.verify(addr);
+        await kycTx.wait();
+      }
     }
     interactLog('success', 'All KYC verified ✓');
     interactLog('info', 'Issuing all tokens...');
@@ -1664,20 +1697,34 @@ function publishAndGenerateQR() {
 
 function startSubscriptionPolling(contractAddr) {
   if (subscriptionPollInterval) clearInterval(subscriptionPollInterval);
+  let lastKnownCount = 0;
+  let notified = false;
   subscriptionPollInterval = setInterval(async () => {
     try {
       const prov = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
       const contract = new ethers.Contract(contractAddr, SSCN_ABI, prov);
-      const count = await contract.getSubscriberCount();
-      const totalSub = await contract.totalSubscribed();
-      if (Number(totalSub) > 0) {
+      const totalSub = Number(await contract.totalSubscribed());
+      const state = Number(await contract.currentState());
+
+      // Stop polling if state moved beyond SUBSCRIPTION
+      if (state > 0) {
+        clearInterval(subscriptionPollInterval);
+        subscriptionPollInterval = null;
+        return;
+      }
+
+      // New subscription detected
+      if (totalSub > lastKnownCount) {
+        lastKnownCount = totalSub;
         await refreshIssuerState();
-        // Only notify once
-        if (Number(totalSub) === 1) {
+        if (!notified) {
+          notified = true;
           const notif = document.getElementById('notification');
-          notif.textContent = '🎉 First subscription received!';
+          notif.textContent = '🎉 First subscription received! Deposit coupon to proceed.';
           notif.className = 'notification success show';
           setTimeout(() => notif.classList.remove('show'), 8000);
+        } else {
+          showNotification('New subscription: ' + totalSub + ' total', 'success');
         }
       }
     } catch(e) {}
@@ -1717,14 +1764,27 @@ async function loadInvestorContract(addr) {
       else { const h=Math.floor(rem/3600),m=Math.floor((rem%3600)/60),s=rem%60; el.textContent = h+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s'; el.className = 'countdown'; }
     }, 1000);
 
-    // Countdown sub end
+    // Countdown sub end — only if state is still SUBSCRIPTION
     if (invSubEndInterval) clearInterval(invSubEndInterval);
-    invSubEndInterval = setInterval(() => {
-      const rem = subEnd - Math.floor(Date.now()/1000);
-      const el = document.getElementById('invInfoSubEnd');
-      if (rem <= 0) { el.textContent = 'ENDED'; el.className = 'countdown ended'; clearInterval(invSubEndInterval); }
-      else { const h=Math.floor(rem/3600),m=Math.floor((rem%3600)/60),s=rem%60; el.textContent = h+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s'; el.className = 'countdown'; }
-    }, 1000);
+    const subEndEl = document.getElementById('invInfoSubEnd');
+    if (stateNum !== STATE_SUBSCRIPTION) {
+      // Subscription already closed by issuer (early or on time)
+      subEndEl.textContent = 'Closed by issuer';
+      subEndEl.className = 'countdown ended';
+    } else {
+      invSubEndInterval = setInterval(() => {
+        const rem = subEnd - Math.floor(Date.now()/1000);
+        if (rem <= 0) {
+          subEndEl.textContent = 'ENDED';
+          subEndEl.className = 'countdown ended';
+          clearInterval(invSubEndInterval);
+        } else {
+          const h=Math.floor(rem/3600),m=Math.floor((rem%3600)/60),s=rem%60;
+          subEndEl.textContent = h+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s';
+          subEndEl.className = 'countdown';
+        }
+      }, 1000);
+    }
 
     // Show subscribe form only if state = SUBSCRIPTION and sub period not ended
     const subEnded = Number(SUB_END) < Math.floor(Date.now()/1000);
