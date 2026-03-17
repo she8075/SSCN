@@ -674,8 +674,8 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
     <div style="font-family:var(--mono);font-size:10px;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:12px">ERC-3643 · Sepolia Testnet · Chainlink Oracle</div>
     <h1><span class="dim">Reverse</span> <span class="accent">Convertible</span><br><span class="dim">on ETH/USD</span></h1>
     <div class="hero-stats">
-      <div class="stat-item"><div class="stat-label">Annual Coupon</div><div class="stat-value">10%</div></div>
-      <div class="stat-item"><div class="stat-label">Protection Barrier</div><div class="stat-value">−40%</div></div>
+      <div class="stat-item"><div class="stat-label">Annual Coupon</div><div class="stat-value" id="heroCoupon">—</div></div>
+      <div class="stat-item"><div class="stat-label">Protection Barrier</div><div class="stat-value" id="heroBarrier">—</div></div>
       <div class="stat-item"><div class="stat-label">Nominal</div><div class="stat-value">$1,000</div></div>
       <div class="stat-item">
         <div class="stat-label">ETH/USD Live <span class="live-indicator"><span class="live-dot"></span></span></div>
@@ -944,6 +944,7 @@ const SSCN_BYTECODE = '0x6101606040526040518060400160405280601f81526020017f53534
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let provider = null;
 let issuerSigner = null, issuerAddress = null;
+let _issuerMat = 0, _issuerSubEnd = 0; // stored for countdown refresh
 let investorSigner = null, investorAddress = null;
 let signer = null, userAddress = null; // legacy aliases
 let issuerContract = null;
@@ -1338,17 +1339,8 @@ async function loadIssuerContract(addr) {
     ]);
     const s0 = Number(S0)/1e8, bar = Number(BARRIER)/1e8;
     const mat = Number(MATURITY), subEnd = Number(SUB_END);
+    _issuerMat = mat; _issuerSubEnd = subEnd;
     const stateNum = Number(state);
-
-    document.getElementById('issuerInfoS0').textContent = '$' + s0.toLocaleString('en-US', {minimumFractionDigits:2});
-    document.getElementById('issuerInfoBarrier').textContent = '$' + bar.toFixed(2) + ' (' + ((bar/s0)*100).toFixed(0) + '% S0)';
-    document.getElementById('issuerInfoState').textContent = stateLabel(stateNum);
-    document.getElementById('issuerInfoMaturity').textContent = new Date(mat*1000).toLocaleString();
-    document.getElementById('issuerInfoMaxSupply').textContent = maxSupply.toString() + ' tokens';
-    document.getElementById('issuerInfoSubscribed').textContent = totalSub.toString() + ' / ' + maxSupply.toString();
-
-    // Maturity countdown
-    if (issuerCountdownInterval) clearInterval(issuerCountdownInterval);
     issuerCountdownInterval = setInterval(() => {
       const rem = mat - Math.floor(Date.now()/1000);
       const el = document.getElementById('issuerInfoCountdown');
@@ -1380,6 +1372,17 @@ async function refreshIssuerState() {
       issuerContract.MAX_SUPPLY(), issuerContract.couponDeposited(),
       issuerContract.SUBSCRIPTION_END()
     ]);
+
+    // Restart maturity countdown if not running and we have the value
+    if (_issuerMat > 0 && !issuerCountdownInterval) {
+      issuerCountdownInterval = setInterval(() => {
+        const rem = _issuerMat - Math.floor(Date.now()/1000);
+        const el = document.getElementById('issuerInfoCountdown');
+        if (!el) return;
+        if (rem <= 0) { el.textContent = 'MATURE'; el.className = 'countdown mature'; clearInterval(issuerCountdownInterval); issuerCountdownInterval = null; }
+        else { const h=Math.floor(rem/3600),m=Math.floor((rem%3600)/60),s=rem%60; el.textContent = h+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s'; el.className = 'countdown'; }
+      }, 1000);
+    }
     const stateNum = Number(state);
     const sub = Number(totalSub), max = Number(maxSupply);
 
@@ -1750,6 +1753,13 @@ async function loadInvestorContract(addr) {
 
     document.getElementById('invInfoS0').textContent = '$' + s0.toLocaleString('en-US', {minimumFractionDigits:2});
     document.getElementById('invInfoBarrier').textContent = '$' + bar.toFixed(2) + ' (' + ((bar/s0)*100).toFixed(0) + '% S0)';
+    // Update hero stats
+    const couponBps = Number(await investorContract.COUPON_BPS());
+    const protection = (100 - (bar/s0)*100).toFixed(0);
+    const heroCoupon = document.getElementById('heroCoupon');
+    const heroBarrier = document.getElementById('heroBarrier');
+    if (heroCoupon) heroCoupon.textContent = (couponBps/100).toFixed(1) + '%';
+    if (heroBarrier) heroBarrier.textContent = '−' + protection + '%';
     document.getElementById('invInfoState').textContent = stateLabel(stateNum);
     document.getElementById('invInfoMaturity').textContent = new Date(mat*1000).toLocaleString();
     document.getElementById('invInfoMaxSupply').textContent = maxSupply.toString() + ' tokens';
