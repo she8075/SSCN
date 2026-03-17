@@ -287,16 +287,16 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
     <button id="issuerDisconnectBtn" onclick="disconnectWallet()" style="display:none;background:transparent;border:1px solid var(--danger);color:var(--danger);padding:8px 16px;font-family:var(--mono);font-size:11px;cursor:pointer;letter-spacing:1px;">Disconnect</button>
     <button onclick="toggleQR('issuer')" title="Open on mobile" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:8px 12px;font-family:var(--mono);font-size:11px;cursor:pointer;">📱</button>
   </div>
+  <div class="nav-wallet" id="navWalletSandbox" style="display:none">
+    <span style="font-family:var(--mono);font-size:10px;color:var(--orange);letter-spacing:1px;margin-right:4px">SANDBOX</span>
+    <button id="sandboxConnectBtn" onclick="connectWalletForTab('sandbox')" style="background:transparent;border:1px solid var(--orange);color:var(--orange);padding:8px 20px;font-family:var(--mono);font-size:12px;cursor:pointer;transition:all 0.2s;letter-spacing:1px;">Connect Wallet</button>
+    <button id="sandboxDisconnectBtn" onclick="disconnectWallet()" style="display:none;background:transparent;border:1px solid var(--danger);color:var(--danger);padding:8px 16px;font-family:var(--mono);font-size:11px;cursor:pointer;letter-spacing:1px;">Disconnect</button>
+  </div>
   <div class="nav-wallet" id="navWalletInvestor" style="display:none">
     <span style="font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:1px;margin-right:4px">INVESTISSEUR</span>
     <button id="investorConnectBtn" onclick="connectWalletForTab('investor')">Connect Wallet</button>
     <button id="investorDisconnectBtn" onclick="disconnectWallet()" style="display:none;background:transparent;border:1px solid var(--danger);color:var(--danger);padding:8px 16px;font-family:var(--mono);font-size:11px;cursor:pointer;letter-spacing:1px;">Disconnect</button>
     <button onclick="toggleQR('investor')" title="Open on mobile" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:8px 12px;font-family:var(--mono);font-size:11px;cursor:pointer;">📱</button>
-  </div>
-  <div class="nav-wallet" id="navWalletSandbox" style="display:none">
-    <span style="font-family:var(--mono);font-size:10px;color:var(--orange);letter-spacing:1px;margin-right:4px">SANDBOX</span>
-    <button id="sandboxConnectBtn" onclick="connectWalletForTab('sandbox')" style="background:transparent;border:1px solid var(--orange);color:var(--orange);padding:8px 20px;font-family:var(--mono);font-size:12px;cursor:pointer;transition:all 0.2s;letter-spacing:1px;">Connect Wallet</button>
-    <button id="sandboxDisconnectBtn" onclick="disconnectWallet()" style="display:none;background:transparent;border:1px solid var(--danger);color:var(--danger);padding:8px 16px;font-family:var(--mono);font-size:11px;cursor:pointer;letter-spacing:1px;">Disconnect</button>
   </div>
 </nav>
 
@@ -670,61 +670,6 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
 
     <div class="tx-log" id="interactLog"><div class="log-line">// Contract loaded — ready to interact</div></div>
   </div>
-
-  <!-- TEST / DEBUG -->
-  <div class="section-header" style="padding-top:24px">
-    <span class="section-num" style="color:var(--text-dim)">⚙</span>
-    <span class="section-title" style="color:var(--text-muted);font-size:14px">Test Scenarios</span>
-    <div class="section-line"></div>
-    <button onclick="toggleTestPanel()" id="testToggleBtn" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:10px;padding:6px 14px;cursor:pointer;letter-spacing:1px;white-space:nowrap;flex-shrink:0">▼ Show</button>
-  </div>
-
-  <div id="testPanelWrapper" style="display:none">
-    <div class="card" style="border-color:rgba(255,171,64,0.2);background:rgba(255,171,64,0.03)">
-      <div class="card-title" style="color:var(--orange)">⚠ MockPriceFeed — For demo only (barrier breach simulation)</div>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:16px;line-height:1.8">
-        To simulate a barrier breach, deploy the <code style="color:var(--accent3)">MockPriceFeed</code> contract on Remix with an initial price,
-        use its address as <code style="color:var(--accent3)">_priceFeed</code> when deploying SSCN, then set a lower price before <code style="color:var(--accent3)">settleAtMaturity()</code>.
-      </div>
-      <div style="background:var(--bg);border:1px solid var(--border);padding:12px 16px;font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-bottom:16px;line-height:1.9">
-        <div style="color:var(--accent3);margin-bottom:4px">// MockPriceFeed.sol — deploy on Remix first</div>
-        <div>constructor(<span style="color:var(--accent)">int256 _price</span>)  // e.g. 200000000000 = $2,000</div>
-        <div>function setPrice(<span style="color:var(--accent)">int256 _price</span>) // call before settleAtMaturity</div>
-        <div>function latestRoundData() // Chainlink-compatible interface</div>
-      </div>
-
-      <div class="grid-2">
-        <div>
-          <div class="card-title">MockPriceFeed address</div>
-          <div class="input-group">
-            <label class="input-label">Paste address after deploying on Remix</label>
-            <input type="text" id="mockFeedAddr" placeholder="0x... MockPriceFeed address" style="font-family:var(--mono);font-size:12px">
-          </div>
-          <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);line-height:1.8">
-            Then deploy SSCN (section 02) using this address as <strong>_priceFeed</strong> instead of Chainlink.
-          </div>
-        </div>
-
-        <div>
-          <div class="card-title">Set price before settlement</div>
-          <div class="input-group">
-            <label class="input-label">New price (× 1e8)</label>
-            <input type="text" id="mockNewPrice" value="100000000000" placeholder="e.g. 100000000000 = $1,000">
-          </div>
-          <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-bottom:10px;line-height:1.8">
-            $2,000 → 200000000000<br>
-            $1,500 → 150000000000 (−25%)<br>
-            $1,000 → 100000000000 (−50%)<br>
-            $800  →  80000000000 (−60%)
-          </div>
-          <button class="btn" onclick="setMockPrice()" style="border-color:var(--orange);color:var(--orange)">Set Mock Price</button>
-          <div id="mockPriceStatus" style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:8px;min-height:14px"></div>
-        </div>
-      </div>
-      <div class="tx-log" id="mockLog" style="margin-top:12px"><div class="log-line">// Paste MockPriceFeed address above, then use Set Mock Price before settling</div></div>
-    </div>
-  </div>
-
 </div><!-- /panelIssuer -->
 
 
@@ -895,53 +840,51 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <div class="panel" id="panelSandbox">
 
-  <!-- MOCK PRICE FEED -->
   <div class="section-header" style="padding-top:24px">
     <span class="section-num" style="color:var(--orange)">00</span>
     <span class="section-title" style="color:var(--orange)">Mock Price Feed</span>
     <div class="section-line"></div>
   </div>
   <div class="card" style="border-color:rgba(255,171,64,0.25);background:rgba(255,171,64,0.03);margin-bottom:24px">
-    <div class="card-title" style="color:var(--orange)">Deploy MockPriceFeed — control S₀ and S(T) manually</div>
+    <div class="card-title" style="color:var(--orange)">Control S₀ and S(T) manually — barrier breach simulation</div>
     <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:16px;line-height:1.8">
-      Deploy a fake Chainlink feed with a price you choose. Use its address as <strong>_priceFeed</strong> in section 01 below.
-      Before settlement, call <strong>Set S(T)</strong> to force any final price — this lets you test both the no-breach and breach scenarios.
+      Deploy a MockPriceFeed with a price you choose. Use its address as <strong>_priceFeed</strong> in section 01.
+      Before settlement, set S(T) to any value to test both scenarios (no breach / breach).
     </div>
     <div class="grid-2">
       <div>
         <div class="input-group">
           <label class="input-label">S₀ — Initial Price (USD)</label>
-          <input type="number" id="sbMockS0" value="2000" step="100" style="font-family:var(--mono);font-size:20px">
+          <input type="number" id="sbMockS0" value="2000" step="100" oninput="updateSbRaw()">
         </div>
         <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-bottom:12px">
-          = <span id="sbMockS0Raw" style="color:var(--orange)">200000000000</span> (× 1e8 for Chainlink)
+          = <span id="sbMockS0Raw" style="color:var(--orange)">200000000000</span> (×1e8)
         </div>
         <button class="btn" onclick="deploySbMockFeed()" style="border-color:var(--orange);color:var(--orange);width:100%">🚀 Deploy MockPriceFeed</button>
-        <div id="sbMockFeedResult" style="font-family:var(--mono);font-size:11px;margin-top:10px;min-height:14px;color:var(--text-muted)"></div>
+        <div id="sbMockFeedResult" style="font-family:var(--mono);font-size:11px;margin-top:10px;min-height:16px;color:var(--text-muted)"></div>
       </div>
       <div>
         <div class="input-group">
           <label class="input-label">S(T) — Final Price to simulate (USD)</label>
-          <input type="number" id="sbMockST" value="1000" step="100" style="font-family:var(--mono);font-size:20px">
+          <input type="number" id="sbMockST" value="1000" step="100" oninput="updateSbRaw()">
         </div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-bottom:4px" id="sbMockSTHint">
-          = <span id="sbMockSTRaw" style="color:var(--orange)">100000000000</span> · P&L vs S₀: <span id="sbMockSTPnl" style="color:var(--danger)">−50.0%</span>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-bottom:6px">
+          P&L vs S₀: <span id="sbMockSTPnl" style="color:var(--danger)">−50.0%</span>
         </div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-          <button onclick="setSbQuick(2000)" class="btn btn-secondary" style="font-size:10px;padding:6px 10px">$2,000</button>
-          <button onclick="setSbQuick(1500)" class="btn btn-secondary" style="font-size:10px;padding:6px 10px">$1,500 −25%</button>
-          <button onclick="setSbQuick(1200)" class="btn btn-secondary" style="font-size:10px;padding:6px 10px">$1,200 −40%</button>
-          <button onclick="setSbQuick(1000)" class="btn btn-secondary" style="font-size:10px;padding:6px 10px">$1,000 −50%</button>
-          <button onclick="setSbQuick(800)"  class="btn btn-secondary" style="font-size:10px;padding:6px 10px">$800 −60%</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+          <button onclick="setSbQuick(2000)" class="btn btn-secondary" style="font-size:10px;padding:5px 8px">$2,000</button>
+          <button onclick="setSbQuick(1500)" class="btn btn-secondary" style="font-size:10px;padding:5px 8px">$1,500 −25%</button>
+          <button onclick="setSbQuick(1200)" class="btn btn-secondary" style="font-size:10px;padding:5px 8px">$1,200 −40%</button>
+          <button onclick="setSbQuick(1000)" class="btn btn-secondary" style="font-size:10px;padding:5px 8px">$1,000 −50%</button>
+          <button onclick="setSbQuick(800)"  class="btn btn-secondary" style="font-size:10px;padding:5px 8px">$800 −60%</button>
         </div>
-        <button class="btn" onclick="setSbMockPrice()" style="border-color:var(--orange);color:var(--orange);width:100%">⚙ Set S(T) — Override price</button>
+        <button class="btn" onclick="setSbMockPrice()" style="border-color:var(--orange);color:var(--orange);width:100%">⚙ Set S(T) before settlement</button>
         <div id="sbMockPriceStatus" style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:8px;min-height:14px"></div>
       </div>
     </div>
-    <div class="tx-log" id="sbMockLog" style="margin-top:12px"><div class="log-line info">// Deploy MockPriceFeed first, then use its address in section 01 below</div></div>
+    <div class="tx-log" id="sbMockLog" style="margin-top:12px"><div class="log-line info">// Deploy MockPriceFeed first, then use its address in section 01</div></div>
   </div>
 
-  <!-- DEPLOY (same as issuer) -->
   <div class="section-header">
     <span class="section-num" style="color:var(--orange)">01</span>
     <span class="section-title">Deploy SSCN Contract</span>
@@ -949,50 +892,48 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
   </div>
   <div class="grid-2" style="margin-bottom:24px">
     <div class="card">
-      <div class="card-title">Contract Parameters</div>
+      <div class="card-title">Parameters</div>
+      <div class="input-group"><label class="input-label">_priceFeed (MockPriceFeed address)</label><input type="text" id="sbDepPriceFeed" placeholder="0x... auto-filled after deploy above" style="font-family:var(--mono);font-size:11px"></div>
       <div class="param-grid">
-        <div class="input-group"><label class="input-label">_priceFeed (MockPriceFeed address)</label><input type="text" id="sbDepPriceFeed" placeholder="0x... from section 00 above" style="font-family:var(--mono);font-size:11px"></div>
-        <div class="input-group"><label class="input-label">Coupon BPS (e.g. 1000 = 10%)</label><input type="number" id="sbDepCoupon" value="1000"></div>
-        <div class="input-group"><label class="input-label">Barrier % (e.g. 6000 = 60%)</label><input type="number" id="sbDepBarrier" value="6000"></div>
-        <div class="input-group"><label class="input-label">Maturity Delay (seconds)</label><input type="number" id="sbDepMaturity" value="300"></div>
-        <div class="input-group"><label class="input-label">Max Supply (tokens)</label><input type="number" id="sbDepMaxSupply" value="5"></div>
-        <div class="input-group"><label class="input-label">Subscription Period (seconds)</label><input type="number" id="sbDepSubDelay" value="120"></div>
+        <div class="input-group"><label class="input-label">Coupon BPS (1000=10%)</label><input type="number" id="sbDepCoupon" value="1000"></div>
+        <div class="input-group"><label class="input-label">Barrier % (7000=70%)</label><input type="number" id="sbDepBarrier" value="7000"></div>
+        <div class="input-group"><label class="input-label">Maturity Delay (s)</label><input type="number" id="sbDepMaturity" value="300"></div>
+        <div class="input-group"><label class="input-label">Max Supply</label><input type="number" id="sbDepMaxSupply" value="3"></div>
+        <div class="input-group"><label class="input-label">Subscription Period (s)</label><input type="number" id="sbDepSubDelay" value="120"></div>
       </div>
-      <div style="padding:10px 12px;background:var(--bg);border:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-bottom:12px;line-height:1.8">
-        <div>MockKYC <span style="color:var(--accent3)">0x1DDd83f21D764369807a789CFFe60a651E011aF4</span></div>
-        <div>MockUSDC <span style="color:var(--accent3)">0x19D76090915c4f97fF2075C3AC0822AbE1898E91</span></div>
+      <div style="padding:10px;background:var(--bg);border:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-bottom:12px;line-height:1.8">
+        MockKYC <span style="color:var(--accent3)">0x1DDd83f21D764369807a789CFFe60a651E011aF4</span><br>
+        MockUSDC <span style="color:var(--accent3)">0x19D76090915c4f97fF2075C3AC0822AbE1898E91</span>
       </div>
       <button class="btn" onclick="deploySbContract()" style="border-color:var(--orange);color:var(--orange);width:100%">Deploy SSCN (Sandbox)</button>
       <div class="tx-log" id="sbDeployLog" style="margin-top:12px"><div class="log-line">// Ready</div></div>
     </div>
     <div class="card">
       <div class="card-title">Deployed contracts</div>
-      <div class="contracts-list" id="sbDeployedList"><div style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">None yet</div></div>
+      <div id="sbDeployedList"><div style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">None yet</div></div>
     </div>
   </div>
 
-  <!-- MANAGE (same as issuer) -->
   <div class="section-header">
     <span class="section-num" style="color:var(--orange)">02</span>
     <span class="section-title">Manage Contract</span>
     <div class="section-line"></div>
   </div>
-
   <div class="contract-input">
     <input type="text" id="sbContractAddress" placeholder="0x... sandbox contract">
     <button class="btn" onclick="loadSbContract(document.getElementById('sbContractAddress').value)" style="border-color:var(--orange);color:var(--orange)">Load</button>
   </div>
 
   <div class="stepper" id="sbStepper">
-    <div class="step locked" id="sbStep1"><div class="step-circle">1</div><div class="step-label">Deploy /<br>Load</div></div>
-    <div class="step locked" id="sbStep2"><div class="step-circle">2</div><div class="step-label">KYC &<br>Publish</div></div>
+    <div class="step locked" id="sbStep1"><div class="step-circle">1</div><div class="step-label">Deploy/<br>Load</div></div>
+    <div class="step locked" id="sbStep2"><div class="step-circle">2</div><div class="step-label">KYC &<br>QR</div></div>
     <div class="step locked" id="sbStep3"><div class="step-circle">3</div><div class="step-label">Subscriptions</div></div>
     <div class="step locked" id="sbStep4"><div class="step-circle">4</div><div class="step-label">Deposit<br>Coupon</div></div>
     <div class="step locked" id="sbStep5"><div class="step-circle">5</div><div class="step-label">Issue +<br>Settle</div></div>
   </div>
 
   <div id="sbContractInfo" class="contract-info">
-    <div class="info-grid" style="margin-bottom:24px">
+    <div class="info-grid" style="margin-bottom:20px">
       <div class="info-item"><div class="info-item-label">State</div><div class="info-item-value" id="sbInfoState">—</div></div>
       <div class="info-item"><div class="info-item-label">S₀ (mock)</div><div class="info-item-value orange" id="sbInfoS0">—</div></div>
       <div class="info-item"><div class="info-item-label">Barrier</div><div class="info-item-value" id="sbInfoBarrier">—</div></div>
@@ -1001,30 +942,27 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
       <div class="info-item"><div class="info-item-label">Coupon Deposited</div><div class="info-item-value" id="sbInfoCoupon">—</div></div>
     </div>
 
-    <!-- Step 2 — KYC + QR -->
     <div class="step-panel" id="sbPanel2">
-      <div class="step-panel-title">Step 2 — KYC Verify + Share term sheet</div>
-      <div style="display:flex;gap:8px;margin-bottom:12px">
-        <input type="text" id="sbKycAddr" placeholder="0x... investor address" style="flex:1;font-family:var(--mono);font-size:12px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);color:var(--text)">
+      <div class="step-panel-title">Step 2 — KYC + Share term sheet</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input type="text" id="sbKycAddr" placeholder="0x... investor address" style="flex:1;font-family:var(--mono);font-size:12px;padding:10px;background:var(--bg);border:1px solid var(--border);color:var(--text)">
         <button onclick="sbKycVerify()" class="btn" style="border-color:var(--orange);color:var(--orange);white-space:nowrap">✓ KYC Verify</button>
       </div>
       <div id="sbKycStatus" style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-bottom:12px;min-height:14px"></div>
-      <button onclick="sbPublishQR()" class="btn" style="border-color:var(--orange);color:var(--orange);width:100%">📤 Generate Term Sheet QR</button>
+      <button onclick="sbPublishQR()" class="btn" style="border-color:var(--orange);color:var(--orange);width:100%">📤 Generate QR / Link</button>
       <div id="sbQRArea" style="display:none;margin-top:16px;padding:16px;border:1px solid rgba(255,171,64,0.2);background:rgba(255,171,64,0.03)">
         <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
           <div><div id="sbQRCanvas" style="background:#fff;padding:8px;display:inline-block"></div></div>
           <div style="flex:1">
-            <div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Link</div>
             <div style="font-family:var(--mono);font-size:10px;color:var(--orange);word-break:break-all;margin-bottom:8px" id="sbQRUrl"></div>
-            <button onclick="sbCopyLink()" class="btn btn-secondary" style="font-size:10px;padding:6px 12px">📋 Copy</button>
+            <button onclick="sbCopyLink()" class="btn btn-secondary" style="font-size:10px;padding:6px 12px">📋 Copy Link</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Step 3 — Monitor subscriptions -->
     <div class="step-panel" id="sbPanel3">
-      <div class="step-panel-title">Step 3 — Monitor subscriptions</div>
+      <div class="step-panel-title">Step 3 — Subscriptions</div>
       <div class="info-grid" style="margin-bottom:12px">
         <div class="info-item"><div class="info-item-label">Subscribers</div><div class="info-item-value" id="sbS3Count">—</div></div>
         <div class="info-item"><div class="info-item-label">USDC Locked</div><div class="info-item-value" id="sbS3USDC">—</div></div>
@@ -1033,10 +971,9 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
       <div class="subscriber-list" id="sbSubscriberList"></div>
     </div>
 
-    <!-- Step 4 — Deposit coupon -->
     <div class="step-panel" id="sbPanel4">
-      <div class="step-panel-title">Step 4 — Deposit coupon</div>
-      <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--orange);margin-bottom:12px" id="sbCouponToDeposit">—</div>
+      <div class="step-panel-title">Step 4 — Deposit Coupon</div>
+      <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--orange);margin-bottom:12px" id="sbCouponToDeposit">—</div>
       <div class="actions-row">
         <button class="btn" onclick="sbApproveCoupon()" style="border-color:var(--orange);color:var(--orange)">Approve USDC</button>
         <button class="btn" onclick="sbDepositCoupon()" style="border-color:var(--orange);color:var(--orange)">Deposit Coupon</button>
@@ -1044,29 +981,27 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
       </div>
     </div>
 
-    <!-- Step 5 — Issue + Settle -->
     <div class="step-panel" id="sbPanel5">
-      <div class="step-panel-title">Step 5 — Issue tokens & Settle</div>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:12px;line-height:1.8">
-        Before settling, go to section 00 and call <strong style="color:var(--orange)">Set S(T)</strong> to override the mock price to the value you want to test.
+      <div class="step-panel-title">Step 5 — Issue & Settle</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--orange);margin-bottom:12px;padding:10px;border:1px solid rgba(255,171,64,0.2);background:rgba(255,171,64,0.03)">
+        ⚠ Before settling — go to section 00 and call <strong>Set S(T)</strong> to override the mock price.
       </div>
       <div class="actions-row">
         <button class="btn" onclick="sbIssueAll()" style="border-color:var(--orange);color:var(--orange)">Issue All Tokens</button>
         <button class="btn" onclick="sbSettle()" style="background:var(--orange);color:var(--bg);border-color:var(--orange);font-weight:700">Settle at Maturity</button>
         <a id="sbEtherscanLink" href="#" target="_blank" style="text-decoration:none"><button class="btn btn-secondary">↗ Etherscan</button></a>
       </div>
-      <!-- Settlement result -->
       <div id="sbSettledResult" style="display:none;margin-top:20px">
         <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px">Settlement Result</div>
         <div class="info-grid">
           <div class="info-item"><div class="info-item-label">S(T) — Final Price</div><div class="info-item-value" id="sbFinalPrice">—</div></div>
           <div class="info-item"><div class="info-item-label">S₀</div><div class="info-item-value" id="sbS0Recap">—</div></div>
-          <div class="info-item"><div class="info-item-label">Barrier</div><div class="info-item-value orange" id="sbBarrierRecap">—</div></div>
+          <div class="info-item"><div class="info-item-label">Barrier Level</div><div class="info-item-value orange" id="sbBarrierRecap">—</div></div>
           <div class="info-item"><div class="info-item-label">Barrier Breached</div><div class="info-item-value" id="sbBreached">—</div></div>
           <div class="info-item"><div class="info-item-label">Capital / Token</div><div class="info-item-value" id="sbCapital">—</div></div>
           <div class="info-item"><div class="info-item-label">Coupon / Token</div><div class="info-item-value positive" id="sbCouponPerTok">—</div></div>
           <div class="info-item"><div class="info-item-label">Total Payoff / Token</div><div class="info-item-value accent" id="sbTotalPayoff">—</div></div>
-          <div class="info-item"><div class="info-item-label">P&amp;L / Token</div><div class="info-item-value" id="sbPnl">—</div></div>
+          <div class="info-item"><div class="info-item-label">P&L / Token</div><div class="info-item-value" id="sbPnl">—</div></div>
         </div>
       </div>
     </div>
@@ -1234,398 +1169,11 @@ function togglePricer() {
   btn.textContent = isHidden ? '▲ Hide' : '▼ Show';
 }
 
-function toggleTestPanel() {
-  const wrapper = document.getElementById('testPanelWrapper');
-  const btn = document.getElementById('testToggleBtn');
-  const isHidden = wrapper.style.display === 'none';
-  wrapper.style.display = isHidden ? 'block' : 'none';
-  btn.textContent = isHidden ? '▲ Hide' : '▼ Show';
-}
-
-// ─── SANDBOX ──────────────────────────────────────────────────────────────────
-const MOCK_FEED_BYTECODE = '0x608060405234801561000f575f80fd5b5060405161031c38038061031c8339818101604052810190610031919061007b565b805f8190555042600181905550506100a6565b5f80fd5b5f819050919050565b61005a81610048565b8114610064575f80fd5b50565b5f8151905061007581610051565b92915050565b5f602082840312156100905761008f610044565b5b5f61009d84828501610067565b91505092915050565b610269806100b35f395ff3fe608060405234801561000f575f80fd5b506004361061004a575f3560e01c80637519ab501461004e578063a035b1fe1461006c578063f7a308061461008a578063feaf968c146100a6575b5f80fd5b6100566100c8565b604051610063919061011b565b60405180910390f35b6100746100ce565b604051610081919061014c565b60405180910390f35b6100a4600480360381019061009f9190610193565b6100d3565b005b6100ae6100e3565b6040516100bf9594939291906101e2565b60405180910390f35b60015481565b5f5481565b805f819055504260018190555050565b5f805f805f60015f54424260015494509450945094509450909192939495565b5f819050919050565b61011581610103565b82525050565b5f60208201905061012e5f83018461010c565b92915050565b5f819050919050565b61014681610134565b82525050565b5f60208201905061015f5f83018461013d565b92915050565b5f80fd5b61017281610134565b811461017c575f80fd5b50565b5f8135905061018d81610169565b92915050565b5f602082840312156101a8576101a7610165565b5b5f6101b58482850161017f565b91505092915050565b5f69ffffffffffffffffffff82169050919050565b6101dc816101be565b82525050565b5f60a0820190506101f55f8301886101d3565b610202602083018761013d565b61020f604083018661010c565b61021c606083018561010c565b61022960808301846101d3565b969550505050505056fea26469706673582212206eddc1cab11a145167789669dd819168e643a1cd8b002e732ee701279c6b7d2064736f6c63430008140033';
-const MOCK_FEED_ABI = [
-  'constructor(int256)',
-  'function setPrice(int256 _price) external',
-  'function latestRoundData() external view returns (uint80,int256,uint256,uint256,uint80)',
-  'function price() view returns (int256)'
-];
-
-let sbSigner = null, sbAddress = null;
-let sbContract = null;
-let sbMockFeedAddress = null;
-let sbCountdownInterval = null;
-let _sbMat = 0;
-let _sbQR = null;
-
-// Update raw values display
-document.addEventListener('DOMContentLoaded', () => {
-  const s0Input = document.getElementById('sbMockS0');
-  const stInput = document.getElementById('sbMockST');
-  if (s0Input) s0Input.addEventListener('input', updateSbRaw);
-  if (stInput) stInput.addEventListener('input', updateSbRaw);
-  updateSbRaw();
-});
-
-function updateSbRaw() {
-  const s0 = parseFloat(document.getElementById('sbMockS0')?.value || 2000);
-  const st = parseFloat(document.getElementById('sbMockST')?.value || 1000);
-  const s0Raw = Math.round(s0 * 1e8);
-  const stRaw = Math.round(st * 1e8);
-  const pnl = ((st - s0) / s0 * 100).toFixed(1);
-  const el = document.getElementById('sbMockS0Raw');
-  const elST = document.getElementById('sbMockSTRaw');
-  const elPnl = document.getElementById('sbMockSTPnl');
-  if (el) el.textContent = s0Raw;
-  if (elST) elST.textContent = stRaw;
-  if (elPnl) { elPnl.textContent = (pnl >= 0 ? '+' : '') + pnl + '%'; elPnl.style.color = pnl >= 0 ? 'var(--accent)' : 'var(--danger)'; }
-}
-
-function setSbQuick(val) {
-  document.getElementById('sbMockST').value = val;
-  updateSbRaw();
-}
-
-function sbLog(type, msg) {
-  const log = document.getElementById('sbLog');
-  if (!log) return;
-  const line = document.createElement('div');
-  line.className = 'log-line ' + type;
-  line.textContent = '[' + new Date().toLocaleTimeString('en-GB') + '] ' + msg;
-  log.appendChild(line); log.scrollTop = log.scrollHeight;
-}
-function sbMockLog(type, msg) {
-  const log = document.getElementById('sbMockLog');
-  if (!log) return;
-  const line = document.createElement('div');
-  line.className = 'log-line ' + type;
-  line.textContent = '[' + new Date().toLocaleTimeString('en-GB') + '] ' + msg;
-  log.appendChild(line); log.scrollTop = log.scrollHeight;
-}
-
-async function deploySbMockFeed() {
-  if (!sbSigner) { showNotification('Connect Sandbox wallet first', 'error'); return; }
-  const s0 = parseFloat(document.getElementById('sbMockS0').value);
-  const price = BigInt(Math.round(s0 * 1e8));
-  const resultEl = document.getElementById('sbMockFeedResult');
-  try {
-    resultEl.textContent = '⟳ Deploying MockPriceFeed...'; resultEl.style.color = 'var(--text-muted)';
-    sbMockLog('info', 'Deploying MockPriceFeed with S₀ = $' + s0 + '...');
-    const factory = new ethers.ContractFactory(MOCK_FEED_ABI, MOCK_FEED_BYTECODE, sbSigner);
-    const contract = await factory.deploy(price);
-    await contract.waitForDeployment();
-    sbMockFeedAddress = await contract.getAddress();
-    resultEl.innerHTML = '✅ MockPriceFeed: <span style="color:var(--orange)">' + sbMockFeedAddress + '</span>';
-    resultEl.style.color = 'var(--accent)';
-    // Auto-fill _priceFeed in deploy form
-    document.getElementById('sbDepPriceFeed').value = sbMockFeedAddress;
-    sbMockLog('success', 'Deployed: ' + sbMockFeedAddress);
-    showNotification('MockPriceFeed deployed ✓ — address auto-filled below', 'success');
-  } catch(e) {
-    resultEl.textContent = '❌ ' + e.message.slice(0,80);
-    resultEl.style.color = 'var(--danger)';
-    sbMockLog('error', e.message);
-  }
-}
-
-async function setSbMockPrice() {
-  if (!sbSigner) { showNotification('Connect Sandbox wallet first', 'error'); return; }
-  const addr = sbMockFeedAddress || document.getElementById('sbDepPriceFeed').value.trim();
-  if (!addr || !ethers.isAddress(addr)) { showNotification('No MockPriceFeed address', 'error'); return; }
-  const st = parseFloat(document.getElementById('sbMockST').value);
-  const price = BigInt(Math.round(st * 1e8));
-  const statusEl = document.getElementById('sbMockPriceStatus');
-  try {
-    statusEl.textContent = '⟳ Setting price to $' + st + '...'; statusEl.style.color = 'var(--text-muted)';
-    const contract = new ethers.Contract(addr, MOCK_FEED_ABI, sbSigner);
-    const tx = await contract.setPrice(price);
-    sbMockLog('info', 'Tx: ' + tx.hash);
-    await tx.wait();
-    statusEl.textContent = '✅ S(T) set to $' + st + ' — now call Settle at Maturity';
-    statusEl.style.color = 'var(--accent)';
-    sbMockLog('success', 'S(T) = $' + st + ' — ready to settle');
-    showNotification('Mock price set to $' + st + ' ✓', 'success');
-  } catch(e) {
-    statusEl.textContent = '❌ ' + e.message.slice(0,80);
-    statusEl.style.color = 'var(--danger)';
-    sbMockLog('error', e.message);
-  }
-}
-
-async function deploySbContract() {
-  if (!sbSigner) { showNotification('Connect Sandbox wallet first', 'error'); return; }
-  const priceFeed = document.getElementById('sbDepPriceFeed').value.trim();
-  if (!priceFeed || !ethers.isAddress(priceFeed)) { showNotification('Enter MockPriceFeed address', 'error'); return; }
-  const couponBps = document.getElementById('sbDepCoupon').value;
-  const barrierPct = document.getElementById('sbDepBarrier').value;
-  const matDelay = document.getElementById('sbDepMaturity').value;
-  const maxSupply = document.getElementById('sbDepMaxSupply').value;
-  const subDelay = document.getElementById('sbDepSubDelay').value;
-  const log = document.getElementById('sbDeployLog');
-  const addLog = (t, m) => { const l = document.createElement('div'); l.className='log-line '+t; l.textContent='> '+m; log.appendChild(l); log.scrollTop=log.scrollHeight; };
-  try {
-    addLog('info', 'Deploying SSCN (Sandbox)...');
-    const factory = new ethers.ContractFactory(SSCN_ABI, SSCN_BYTECODE, sbSigner);
-    const contract = await factory.deploy(priceFeed, MOCKKYC_ADDR, MOCKUSDC_ADDR, couponBps, matDelay, barrierPct, maxSupply, subDelay);
-    addLog('info', 'Tx: ' + contract.deploymentTransaction().hash);
-    await contract.waitForDeployment();
-    const addr = await contract.getAddress();
-    addLog('success', 'Deployed: ' + addr);
-    showNotification('SSCN (Sandbox) deployed ✓', 'success');
-    document.getElementById('sbContractAddress').value = addr;
-    // Add to list
-    const list = document.getElementById('sbDeployedList');
-    const card = document.createElement('div');
-    card.className = 'contract-card';
-    card.style.borderColor = 'rgba(255,171,64,0.3)';
-    card.onclick = () => loadSbContract(addr);
-    card.innerHTML = '<div><div class="contract-addr" style="color:var(--orange)">' + addr.slice(0,10) + '...' + addr.slice(-5) + '</div><div class="contract-meta">Sandbox · Barrier ' + barrierPct + ' · ' + new Date().toLocaleTimeString() + '</div></div><div class="tag-blue" style="border-color:rgba(255,171,64,0.3);color:var(--orange);background:rgba(255,171,64,0.1)">TEST</div>';
-    list.innerHTML = '';
-    list.appendChild(card);
-    await loadSbContract(addr);
-  } catch(e) { addLog('error', e.message); }
-}
-
-async function loadSbContract(addr) {
-  if (!addr || addr.length < 10) return;
-  document.getElementById('sbContractAddress').value = addr;
-  document.getElementById('sbEtherscanLink').href = 'https://sepolia.etherscan.io/address/' + addr;
-  try {
-    const prov = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
-    sbContract = new ethers.Contract(addr, SSCN_ABI, sbSigner || prov);
-    const [S0, BARRIER, MATURITY, state, maxSupply, totalSub] = await Promise.all([
-      sbContract.S0(), sbContract.BARRIER(), sbContract.MATURITY(),
-      sbContract.currentState(), sbContract.MAX_SUPPLY(), sbContract.totalSubscribed()
-    ]);
-    const s0 = Number(S0)/1e8, bar = Number(BARRIER)/1e8;
-    const mat = Number(MATURITY);
-    _sbMat = mat;
-    document.getElementById('sbInfoS0').textContent = '$' + s0.toLocaleString('en-US', {minimumFractionDigits:2});
-    document.getElementById('sbInfoBarrier').textContent = '$' + bar.toFixed(2) + ' (' + ((bar/s0)*100).toFixed(0) + '% S₀)';
-    document.getElementById('sbInfoState').textContent = stateLabel(Number(state));
-    document.getElementById('sbInfoSubscribed').textContent = totalSub.toString() + ' / ' + maxSupply.toString();
-    if (sbCountdownInterval) clearInterval(sbCountdownInterval);
-    sbCountdownInterval = setInterval(() => {
-      const rem = _sbMat - Math.floor(Date.now()/1000);
-      const el = document.getElementById('sbInfoCountdown');
-      if (!el) return;
-      if (rem <= 0) { el.textContent = 'MATURE'; el.className = 'countdown mature'; clearInterval(sbCountdownInterval); }
-      else { const h=Math.floor(rem/3600),m=Math.floor((rem%3600)/60),s=rem%60; el.textContent = h+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s'; el.className='countdown'; }
-    }, 1000);
-    document.getElementById('sbContractInfo').classList.add('visible');
-    sbLog('info', 'Contract loaded: ' + addr);
-    await refreshSbState();
-  } catch(e) { sbLog('error', e.message); }
-}
-
-async function refreshSbState() {
-  if (!sbContract) return;
-  try {
-    const [state, totalSub, maxSupply, couponDep] = await Promise.all([
-      sbContract.currentState(), sbContract.totalSubscribed(),
-      sbContract.MAX_SUPPLY(), sbContract.couponDeposited()
-    ]);
-    const stateNum = Number(state), sub = Number(totalSub), max = Number(maxSupply);
-    document.getElementById('sbInfoState').textContent = stateLabel(stateNum);
-    document.getElementById('sbInfoSubscribed').textContent = sub + ' / ' + max;
-    document.getElementById('sbInfoCoupon').textContent = couponDep ? '✅ Yes' : '—';
-
-    let active = 1;
-    if (stateNum === STATE_SETTLED) active = 5;
-    else if (stateNum === STATE_ACTIVE) active = 5;
-    else if (couponDep) active = 5;
-    else if (sub > 0) active = 4;
-    else active = 2;
-
-    for (let i = 1; i <= 5; i++) {
-      const el = document.getElementById('sbStep' + i);
-      const panel = document.getElementById('sbPanel' + i);
-      if (!el) continue;
-      el.classList.remove('active','done','locked');
-      const circle = el.querySelector('.step-circle');
-      if (i < active) { el.classList.add('done'); if (circle) circle.textContent = '✓'; }
-      else if (i === active) { el.classList.add('active'); if (circle) circle.textContent = String(i); }
-      else { el.classList.add('locked'); if (circle) circle.textContent = String(i); }
-      if (panel) { panel.classList.remove('active','done'); if (i < active) panel.classList.add('done'); else if (i === active) panel.classList.add('active'); }
-    }
-
-    if (sub > 0) {
-      document.getElementById('sbS3Count').textContent = sub + ' / ' + max;
-      try {
-        const usdc = await sbContract.getUSDCBalance();
-        document.getElementById('sbS3USDC').textContent = '$' + (Number(usdc)/1e6).toFixed(2);
-        const req = await sbContract.getCouponRequired();
-        document.getElementById('sbS3Coupon').textContent = '$' + (Number(req)/1e6).toFixed(2);
-        document.getElementById('sbCouponToDeposit').textContent = '$' + (Number(req)/1e6).toFixed(2) + ' USDC';
-        const count = await sbContract.getSubscriberCount();
-        const list = document.getElementById('sbSubscriberList');
-        list.innerHTML = '';
-        for (let i = 0; i < Number(count); i++) {
-          const [addr, amount] = await sbContract.getSubscriberAt(i);
-          if (Number(amount) === 0) continue;
-          const row = document.createElement('div'); row.className = 'subscriber-row';
-          row.innerHTML = '<span style="color:var(--orange)">' + addr.slice(0,8) + '...' + addr.slice(-6) + '</span><span>' + amount + ' token(s)</span><span style="color:var(--accent)">$' + (Number(amount)*1000).toLocaleString() + ' USDC</span>';
-          list.appendChild(row);
-        }
-      } catch(e) {}
-    }
-
-    if (stateNum === STATE_SETTLED) await showSbSettledResult();
-  } catch(e) {}
-}
-
-async function sbKycVerify() {
-  if (!sbSigner) { showNotification('Connect Sandbox wallet', 'error'); return; }
-  const addr = document.getElementById('sbKycAddr').value.trim();
-  const statusEl = document.getElementById('sbKycStatus');
-  if (!addr || !ethers.isAddress(addr)) { statusEl.textContent = '⚠ Invalid address'; statusEl.style.color = 'var(--danger)'; return; }
-  try {
-    const kyc = new ethers.Contract(MOCKKYC_ADDR, KYC_ABI, sbSigner);
-    const already = await kyc.isVerified(addr);
-    if (already) { statusEl.textContent = '✅ Already KYC-verified'; statusEl.style.color = 'var(--accent)'; return; }
-    statusEl.textContent = '⟳ Verifying...'; statusEl.style.color = 'var(--text-muted)';
-    const tx = await kyc.verify(addr);
-    await tx.wait();
-    statusEl.textContent = '✅ ' + addr.slice(0,8) + '... KYC verified';
-    statusEl.style.color = 'var(--accent)';
-    showNotification('KYC verified ✓', 'success');
-  } catch(e) { statusEl.textContent = '❌ ' + e.message.slice(0,80); statusEl.style.color = 'var(--danger)'; }
-}
-
-let _sbQRInstance = null;
-function sbPublishQR() {
-  const addr = document.getElementById('sbContractAddress').value.trim();
-  if (!addr) { showNotification('Load a contract first', 'error'); return; }
-  const base = window.location.href.split('?')[0].split('#')[0];
-  const url = base + '?tab=investor&contract=' + addr;
-  const canvas = document.getElementById('sbQRCanvas');
-  canvas.innerHTML = '';
-  _sbQRInstance = new QRCode(canvas, { text: url, width: 160, height: 160, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
-  document.getElementById('sbQRArea').style.display = 'block';
-  document.getElementById('sbQRUrl').textContent = url;
-  showNotification('QR generated ✓', 'success');
-}
-
-function sbCopyLink() {
-  const url = document.getElementById('sbQRUrl').textContent;
-  navigator.clipboard.writeText(url).then(() => showNotification('Link copied ✓', 'success'));
-}
-
-async function sbApproveCoupon() {
-  if (!sbSigner || !sbContract) return;
-  try {
-    const req = await sbContract.getCouponRequired();
-    const contractAddr = await sbContract.getAddress();
-    const usdc = new ethers.Contract(MOCKUSDC_ADDR, ERC20_ABI, sbSigner);
-    sbLog('info', 'Approving coupon...');
-    const tx = await usdc.approve(contractAddr, req);
-    await tx.wait();
-    sbLog('success', 'Approved ✓');
-    showNotification('USDC approved ✓', 'success');
-  } catch(e) { sbLog('error', e.message); }
-}
-
-async function sbDepositCoupon() {
-  if (!sbSigner || !sbContract) return;
-  try {
-    sbLog('info', 'Depositing coupon...');
-    const tx = await sbContract.connect(sbSigner).depositCoupon();
-    await tx.wait();
-    sbLog('success', 'Coupon deposited ✓');
-    showNotification('Coupon deposited ✓', 'success');
-    await refreshSbState();
-  } catch(e) { sbLog('error', e.message); }
-}
-
-async function sbCloseSubscription() {
-  if (!sbSigner || !sbContract) return;
-  try {
-    sbLog('info', 'Closing subscription...');
-    const tx = await sbContract.connect(sbSigner).closeSubscription();
-    await tx.wait();
-    sbLog('success', 'Subscription closed ✓');
-    showNotification('Subscription closed ✓', 'success');
-    await refreshSbState();
-  } catch(e) { sbLog('error', e.message); }
-}
-
-async function sbIssueAll() {
-  if (!sbSigner || !sbContract) return;
-  try {
-    const state = Number(await sbContract.currentState());
-    if (state === 0) {
-      sbLog('info', 'Closing subscription first...');
-      const tx = await sbContract.connect(sbSigner).closeSubscription();
-      await tx.wait();
-      sbLog('success', 'Subscription closed ✓');
-    }
-    const count = await sbContract.getSubscriberCount();
-    const kyc = new ethers.Contract(MOCKKYC_ADDR, KYC_ABI, sbSigner);
-    for (let i = 0; i < Number(count); i++) {
-      const [addr, amount] = await sbContract.getSubscriberAt(i);
-      if (Number(amount) === 0) continue;
-      const already = await kyc.isVerified(addr).catch(() => false);
-      if (!already) { const t = await kyc.verify(addr); await t.wait(); }
-    }
-    sbLog('info', 'Issuing all tokens...');
-    const tx = await sbContract.connect(sbSigner).issueAll();
-    await tx.wait();
-    sbLog('success', 'All tokens issued ✓');
-    showNotification('Tokens issued ✓', 'success');
-    await refreshSbState();
-  } catch(e) { sbLog('error', e.message); }
-}
-
-async function sbSettle() {
-  if (!sbSigner || !sbContract) return;
-  try {
-    sbLog('info', 'Calling settleAtMaturity()...');
-    const tx = await sbContract.connect(sbSigner).settleAtMaturity();
-    sbLog('info', 'Tx: ' + tx.hash);
-    await tx.wait();
-    sbLog('success', 'Settled ✓');
-    showNotification('Contract settled!', 'success');
-    await refreshSbState();
-  } catch(e) {
-    sbLog('error', e.message);
-    if (e.message.includes('not yet')) sbLog('info', '⚠ Maturity not reached yet — wait or reduce maturityDelay');
-  }
-}
-
-async function showSbSettledResult() {
-  if (!sbContract) return;
-  try {
-    const [s0, barrier, breached, capital, coupon, finalPrice] = await Promise.all([
-      sbContract.S0(), sbContract.BARRIER(),
-      sbContract.barrierBreached(), sbContract.capitalPerToken(),
-      sbContract.couponPerToken(), sbContract.finalETHPrice()
-    ]);
-    const s0v = Number(s0)/1e8, barv = Number(barrier)/1e8;
-    const cap = Number(capital)/1e6, coup = Number(coupon)/1e6, sT = Number(finalPrice)/1e8;
-    const payoff = cap + coup, pnl = payoff - 1000;
-    document.getElementById('sbSettledResult').style.display = 'block';
-    document.getElementById('sbFinalPrice').textContent = '$' + sT.toLocaleString('en-US', {minimumFractionDigits:2});
-    document.getElementById('sbFinalPrice').style.color = breached ? 'var(--danger)' : 'var(--accent)';
-    document.getElementById('sbS0Recap').textContent = '$' + s0v.toLocaleString('en-US', {minimumFractionDigits:2});
-    document.getElementById('sbBarrierRecap').textContent = '$' + barv.toFixed(2) + ' (' + ((barv/s0v)*100).toFixed(0) + '% S₀)';
-    document.getElementById('sbBreached').textContent = breached ? '⚠️ YES — Capital loss' : '✅ NO — Full capital';
-    document.getElementById('sbBreached').style.color = breached ? 'var(--danger)' : 'var(--accent)';
-    document.getElementById('sbCapital').textContent = '$' + cap.toFixed(2);
-    document.getElementById('sbCapital').style.color = breached ? 'var(--danger)' : 'var(--accent)';
-    document.getElementById('sbCouponPerTok').textContent = '$' + coup.toFixed(2);
-    document.getElementById('sbTotalPayoff').textContent = '$' + payoff.toFixed(2);
-    document.getElementById('sbPnl').textContent = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2) + ' (' + (pnl/10).toFixed(1) + '%)';
-    document.getElementById('sbPnl').style.color = pnl >= 0 ? 'var(--accent)' : 'var(--danger)';
-  } catch(e) {}
-}
-
 // ─── TAB SWITCHING ────────────────────────────────────────────────────────────
 function switchTab(tab) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active-issuer','active-investor'));
-  document.getElementById('navWalletIssuer').style.display = 'none';
-  document.getElementById('navWalletInvestor').style.display = 'none';
-  document.getElementById('navWalletSandbox').style.display = 'none';
+  document.querySelectorAll('.role-tab').forEach(t => { t.classList.remove('active-issuer','active-investor'); t.style.color=''; t.style.borderBottomColor=''; });
+  ['navWalletIssuer','navWalletInvestor','navWalletSandbox'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
   if (tab === 'issuer') {
     document.getElementById('panelIssuer').classList.add('active');
     document.getElementById('tabIssuer').classList.add('active-issuer');
@@ -1639,19 +1187,20 @@ function switchTab(tab) {
     if (investorAddress) checkAlreadySubscribed();
   } else if (tab === 'sandbox') {
     document.getElementById('panelSandbox').classList.add('active');
-    document.getElementById('tabSandbox').classList.add('active-issuer');
-    document.getElementById('tabSandbox').style.color = 'var(--orange)';
-    document.getElementById('tabSandbox').style.borderBottomColor = 'var(--orange)';
+    const sbTab = document.getElementById('tabSandbox');
+    sbTab.classList.add('active-issuer');
+    sbTab.style.color = 'var(--orange)';
+    sbTab.style.borderBottomColor = 'var(--orange)';
     document.getElementById('navWalletSandbox').style.display = 'flex';
     signer = sbSigner; userAddress = sbAddress;
+    updateSbRaw();
   }
 }
 
 // ─── WALLET ───────────────────────────────────────────────────────────────────
 async function connectWallet() {
-  const tab = document.getElementById('panelSandbox').classList.contains('active') ? 'sandbox' :
-              document.getElementById('panelInvestor').classList.contains('active') ? 'investor' : 'issuer';
-  await connectWalletForTab(tab);
+  const activeTab = document.getElementById('panelIssuer').classList.contains('active') ? 'issuer' : 'investor';
+  await connectWalletForTab(activeTab);
 }
 
 async function connectWalletForTab(tab) {
@@ -1697,23 +1246,23 @@ async function connectWalletForTab(tab) {
 }
 
 function disconnectWallet() {
-  const activeTab = document.getElementById('panelIssuer').classList.contains('active') ? 'issuer' :
-                    document.getElementById('panelSandbox').classList.contains('active') ? 'sandbox' : 'investor';
-  if (activeTab === 'issuer') {
-    issuerSigner = issuerAddress = null; signer = userAddress = null;
-    document.getElementById('issuerConnectBtn').textContent = 'Connect Wallet';
-    document.getElementById('issuerConnectBtn').classList.remove('connected');
-    document.getElementById('issuerDisconnectBtn').style.display = 'none';
-  } else if (activeTab === 'sandbox') {
+  const sbActive = document.getElementById('panelSandbox')?.classList.contains('active');
+  const invActive = document.getElementById('panelInvestor')?.classList.contains('active');
+  if (sbActive) {
     sbSigner = sbAddress = null; signer = userAddress = null;
     document.getElementById('sandboxConnectBtn').textContent = 'Connect Wallet';
     document.getElementById('sandboxConnectBtn').classList.remove('connected');
     document.getElementById('sandboxDisconnectBtn').style.display = 'none';
-  } else {
+  } else if (invActive) {
     investorSigner = investorAddress = null;
     document.getElementById('investorConnectBtn').textContent = 'Connect Wallet';
     document.getElementById('investorConnectBtn').classList.remove('connected');
     document.getElementById('investorDisconnectBtn').style.display = 'none';
+  } else {
+    issuerSigner = issuerAddress = null; signer = userAddress = null;
+    document.getElementById('issuerConnectBtn').textContent = 'Connect Wallet';
+    document.getElementById('issuerConnectBtn').classList.remove('connected');
+    document.getElementById('issuerDisconnectBtn').style.display = 'none';
   }
   showNotification('Disconnected', 'info');
 }
@@ -2888,6 +2437,358 @@ document.addEventListener('DOMContentLoaded', () => {
   const tsModal = document.getElementById('termSheetModal');
   if (tsModal) tsModal.addEventListener('click', function(e) { if (e.target === this) declineTermSheet(); });
 });
+
+// ─── SANDBOX ──────────────────────────────────────────────────────────────────
+const MOCK_FEED_BYTECODE = '0x608060405234801561000f575f80fd5b506040516102c43803806102c483398181016040528101906100319190610074565b805f819055505061009f565b5f80fd5b5f819050919050565b61005381610041565b811461005d575f80fd5b50565b5f8151905061006e8161004a565b92915050565b5f602082840312156100895761008861003d565b5b5f61009684828501610060565b91505092915050565b610218806100ac5f395ff3fe608060405234801561000f575f80fd5b506004361061003f575f3560e01c8063a035b1fe14610043578063f7a3080614610061578063feaf968c1461007d575b5f80fd5b61004b61009f565b60405161005891906100e3565b60405180910390f35b61007b6004803603810190610076919061012a565b6100a4565b005b6100856100ad565b604051610096959493929190610191565b60405180910390f35b5f5481565b805f8190555050565b5f805f805f60015f5442426001945094509450945094509091929394565b5f819050919050565b6100dd816100cb565b82525050565b5f6020820190506100f65f8301846100d4565b92915050565b5f80fd5b610109816100cb565b8114610113575f80fd5b50565b5f8135905061012481610100565b92915050565b5f6020828403121561013f5761013e6100fc565b5b5f61014c84828501610116565b91505092915050565b5f69ffffffffffffffffffff82169050919050565b61017381610155565b82525050565b5f819050919050565b61018b81610179565b82525050565b5f60a0820190506101a45f83018861016a565b6101b160208301876100d4565b6101be6040830186610182565b6101cb6060830185610182565b6101d8608083018461016a565b969550505050505056fea2646970667358221220633945799dcba39f903ff60e0b2f6ca5cde3eb1fa184362e690d2dc3f5142b7164736f6c63430008140033';
+const MOCK_FEED_ABI = [
+  'constructor(int256)',
+  'function setPrice(int256 _price) external',
+  'function latestRoundData() external view returns (uint80,int256,uint256,uint256,uint80)',
+  'function price() view returns (int256)'
+];
+
+let sbSigner = null, sbAddress = null;
+let sbContract = null;
+let sbMockFeedAddress = null;
+let sbCountdownInterval = null;
+let _sbMat = 0;
+let _sbQRInstance = null;
+
+function updateSbRaw() {
+  const s0 = parseFloat(document.getElementById('sbMockS0')?.value || 2000);
+  const st = parseFloat(document.getElementById('sbMockST')?.value || 1000);
+  const pnl = ((st - s0) / s0 * 100).toFixed(1);
+  const el0 = document.getElementById('sbMockS0Raw');
+  const elPnl = document.getElementById('sbMockSTPnl');
+  if (el0) el0.textContent = Math.round(s0 * 1e8);
+  if (elPnl) { elPnl.textContent = (pnl >= 0 ? '+' : '') + pnl + '%'; elPnl.style.color = pnl >= 0 ? 'var(--accent)' : 'var(--danger)'; }
+}
+
+function setSbQuick(val) {
+  const el = document.getElementById('sbMockST');
+  if (el) { el.value = val; updateSbRaw(); }
+}
+
+function sbLog(type, msg) {
+  const log = document.getElementById('sbLog');
+  if (!log) return;
+  const line = document.createElement('div');
+  line.className = 'log-line ' + type;
+  line.textContent = '[' + new Date().toLocaleTimeString('en-GB') + '] ' + msg;
+  log.appendChild(line); log.scrollTop = log.scrollHeight;
+}
+function sbMockLog(type, msg) {
+  const log = document.getElementById('sbMockLog');
+  if (!log) return;
+  const line = document.createElement('div');
+  line.className = 'log-line ' + type;
+  line.textContent = '[' + new Date().toLocaleTimeString('en-GB') + '] ' + msg;
+  log.appendChild(line); log.scrollTop = log.scrollHeight;
+}
+
+async function deploySbMockFeed() {
+  if (!sbSigner) { showNotification('Connect Sandbox wallet first', 'error'); return; }
+  const s0 = parseFloat(document.getElementById('sbMockS0').value);
+  const price = BigInt(Math.round(s0 * 1e8));
+  const resultEl = document.getElementById('sbMockFeedResult');
+  try {
+    resultEl.textContent = '⟳ Deploying MockPriceFeed...'; resultEl.style.color = 'var(--text-muted)';
+    sbMockLog('info', 'Deploying MockPriceFeed with S₀ = $' + s0 + '...');
+    const factory = new ethers.ContractFactory(MOCK_FEED_ABI, MOCK_FEED_BYTECODE, sbSigner);
+    const contract = await factory.deploy(price);
+    await contract.waitForDeployment();
+    sbMockFeedAddress = await contract.getAddress();
+    resultEl.innerHTML = '✅ <span style="color:var(--orange)">' + sbMockFeedAddress + '</span>';
+    document.getElementById('sbDepPriceFeed').value = sbMockFeedAddress;
+    sbMockLog('success', 'Deployed: ' + sbMockFeedAddress + ' — address auto-filled below');
+    showNotification('MockPriceFeed deployed ✓', 'success');
+  } catch(e) {
+    resultEl.textContent = '❌ ' + e.message.slice(0,80);
+    resultEl.style.color = 'var(--danger)';
+    sbMockLog('error', e.message);
+  }
+}
+
+async function setSbMockPrice() {
+  if (!sbSigner) { showNotification('Connect Sandbox wallet first', 'error'); return; }
+  const addr = sbMockFeedAddress || document.getElementById('sbDepPriceFeed').value.trim();
+  if (!addr || !ethers.isAddress(addr)) { showNotification('Deploy MockPriceFeed first', 'error'); return; }
+  const st = parseFloat(document.getElementById('sbMockST').value);
+  const price = BigInt(Math.round(st * 1e8));
+  const statusEl = document.getElementById('sbMockPriceStatus');
+  try {
+    statusEl.textContent = '⟳ Setting price to $' + st + '...'; statusEl.style.color = 'var(--text-muted)';
+    const contract = new ethers.Contract(addr, MOCK_FEED_ABI, sbSigner);
+    const tx = await contract.setPrice(price);
+    sbMockLog('info', 'Tx: ' + tx.hash);
+    await tx.wait();
+    statusEl.textContent = '✅ S(T) = $' + st + ' — now call Settle at Maturity';
+    statusEl.style.color = 'var(--accent)';
+    sbMockLog('success', 'Price set to $' + st);
+    showNotification('S(T) set to $' + st + ' ✓', 'success');
+  } catch(e) {
+    statusEl.textContent = '❌ ' + e.message.slice(0,80);
+    statusEl.style.color = 'var(--danger)';
+    sbMockLog('error', e.message);
+  }
+}
+
+async function deploySbContract() {
+  if (!sbSigner) { showNotification('Connect Sandbox wallet first', 'error'); return; }
+  const priceFeed = document.getElementById('sbDepPriceFeed').value.trim();
+  if (!priceFeed || !ethers.isAddress(priceFeed)) { showNotification('Enter MockPriceFeed address', 'error'); return; }
+  const couponBps = document.getElementById('sbDepCoupon').value;
+  const barrierPct = document.getElementById('sbDepBarrier').value;
+  const matDelay = document.getElementById('sbDepMaturity').value;
+  const maxSupply = document.getElementById('sbDepMaxSupply').value;
+  const subDelay = document.getElementById('sbDepSubDelay').value;
+  const log = document.getElementById('sbDeployLog');
+  const addLog = (t,m) => { const l=document.createElement('div'); l.className='log-line '+t; l.textContent='> '+m; log.appendChild(l); log.scrollTop=log.scrollHeight; };
+  try {
+    addLog('info','Deploying SSCN Sandbox...');
+    const factory = new ethers.ContractFactory(SSCN_ABI, SSCN_BYTECODE, sbSigner);
+    const contract = await factory.deploy(priceFeed, MOCKKYC_ADDR, MOCKUSDC_ADDR, couponBps, matDelay, barrierPct, maxSupply, subDelay);
+    addLog('info','Tx: ' + contract.deploymentTransaction().hash);
+    await contract.waitForDeployment();
+    const addr = await contract.getAddress();
+    addLog('success','Deployed: ' + addr);
+    showNotification('SSCN Sandbox deployed ✓', 'success');
+    document.getElementById('sbContractAddress').value = addr;
+    const list = document.getElementById('sbDeployedList');
+    const card = document.createElement('div');
+    card.className = 'contract-card'; card.style.borderColor = 'rgba(255,171,64,0.3)';
+    card.onclick = () => loadSbContract(addr);
+    card.innerHTML = '<div><div class="contract-addr" style="color:var(--orange)">' + addr.slice(0,10)+'...'+addr.slice(-5)+'</div><div class="contract-meta">Sandbox · '+new Date().toLocaleTimeString()+'</div></div><div class="tag-blue" style="color:var(--orange);border-color:rgba(255,171,64,0.3);background:rgba(255,171,64,0.1)">TEST</div>';
+    list.innerHTML=''; list.appendChild(card);
+    await loadSbContract(addr);
+  } catch(e) { addLog('error',e.message); }
+}
+
+async function loadSbContract(addr) {
+  if (!addr || addr.length < 10) return;
+  document.getElementById('sbContractAddress').value = addr;
+  document.getElementById('sbEtherscanLink').href = 'https://sepolia.etherscan.io/address/' + addr;
+  try {
+    const prov = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
+    sbContract = new ethers.Contract(addr, SSCN_ABI, sbSigner || prov);
+    const [S0, BARRIER, MATURITY, state, maxSupply, totalSub] = await Promise.all([
+      sbContract.S0(), sbContract.BARRIER(), sbContract.MATURITY(),
+      sbContract.currentState(), sbContract.MAX_SUPPLY(), sbContract.totalSubscribed()
+    ]);
+    const s0 = Number(S0)/1e8, bar = Number(BARRIER)/1e8, mat = Number(MATURITY);
+    _sbMat = mat;
+    document.getElementById('sbInfoS0').textContent = '$' + s0.toLocaleString('en-US',{minimumFractionDigits:2});
+    document.getElementById('sbInfoBarrier').textContent = '$' + bar.toFixed(2) + ' (' + ((bar/s0)*100).toFixed(0) + '% S₀)';
+    document.getElementById('sbInfoState').textContent = stateLabel(Number(state));
+    document.getElementById('sbInfoSubscribed').textContent = totalSub.toString() + ' / ' + maxSupply.toString();
+    if (sbCountdownInterval) clearInterval(sbCountdownInterval);
+    sbCountdownInterval = setInterval(() => {
+      const rem = _sbMat - Math.floor(Date.now()/1000);
+      const el = document.getElementById('sbInfoCountdown');
+      if (!el) return;
+      if (rem <= 0) { el.textContent = 'MATURE'; el.className = 'countdown mature'; clearInterval(sbCountdownInterval); }
+      else { const h=Math.floor(rem/3600),m=Math.floor((rem%3600)/60),s=rem%60; el.textContent = h+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s'; el.className='countdown'; }
+    }, 1000);
+    document.getElementById('sbContractInfo').classList.add('visible');
+    sbLog('info','Contract loaded: ' + addr);
+    await refreshSbState();
+  } catch(e) { sbLog('error', e.message); }
+}
+
+async function refreshSbState() {
+  if (!sbContract) return;
+  try {
+    const [state, totalSub, maxSupply, couponDep] = await Promise.all([
+      sbContract.currentState(), sbContract.totalSubscribed(), sbContract.MAX_SUPPLY(), sbContract.couponDeposited()
+    ]);
+    const stateNum = Number(state), sub = Number(totalSub), max = Number(maxSupply);
+    document.getElementById('sbInfoState').textContent = stateLabel(stateNum);
+    document.getElementById('sbInfoSubscribed').textContent = sub + ' / ' + max;
+    document.getElementById('sbInfoCoupon').textContent = couponDep ? '✅ Yes' : '—';
+    let active = 1;
+    if (stateNum === STATE_SETTLED) active = 5;
+    else if (stateNum === STATE_ACTIVE) active = 5;
+    else if (couponDep) active = 5;
+    else if (sub > 0) active = 4;
+    else active = 2;
+    for (let i = 1; i <= 5; i++) {
+      const el = document.getElementById('sbStep' + i);
+      const panel = document.getElementById('sbPanel' + i);
+      if (!el) continue;
+      el.classList.remove('active','done','locked');
+      const circle = el.querySelector('.step-circle');
+      if (i < active) { el.classList.add('done'); if (circle) circle.textContent='✓'; }
+      else if (i === active) { el.classList.add('active'); if (circle) circle.textContent=String(i); }
+      else { el.classList.add('locked'); if (circle) circle.textContent=String(i); }
+      if (panel) { panel.classList.remove('active','done'); if (i < active) panel.classList.add('done'); else if (i === active) panel.classList.add('active'); }
+    }
+    if (sub > 0) {
+      document.getElementById('sbS3Count').textContent = sub + ' / ' + max;
+      try {
+        const usdc = await sbContract.getUSDCBalance();
+        document.getElementById('sbS3USDC').textContent = '$' + (Number(usdc)/1e6).toFixed(2);
+        const req = await sbContract.getCouponRequired();
+        document.getElementById('sbS3Coupon').textContent = '$' + (Number(req)/1e6).toFixed(2);
+        document.getElementById('sbCouponToDeposit').textContent = '$' + (Number(req)/1e6).toFixed(2) + ' USDC';
+        const count = await sbContract.getSubscriberCount();
+        const list = document.getElementById('sbSubscriberList');
+        list.innerHTML = '';
+        for (let i = 0; i < Number(count); i++) {
+          const [a, amt] = await sbContract.getSubscriberAt(i);
+          if (Number(amt) === 0) continue;
+          const row = document.createElement('div'); row.className = 'subscriber-row';
+          row.innerHTML = '<span style="color:var(--orange)">' + a.slice(0,8)+'...'+a.slice(-6)+'</span><span>'+amt+' token(s)</span><span style="color:var(--accent)">$'+(Number(amt)*1000).toLocaleString()+' USDC</span>';
+          list.appendChild(row);
+        }
+      } catch(e) {}
+    }
+    if (stateNum === STATE_SETTLED) await showSbSettledResult();
+  } catch(e) {}
+}
+
+async function sbKycVerify() {
+  if (!sbSigner) { showNotification('Connect Sandbox wallet', 'error'); return; }
+  const addr = document.getElementById('sbKycAddr').value.trim();
+  const statusEl = document.getElementById('sbKycStatus');
+  if (!addr || !ethers.isAddress(addr)) { statusEl.textContent='⚠ Invalid address'; statusEl.style.color='var(--danger)'; return; }
+  try {
+    const kyc = new ethers.Contract(MOCKKYC_ADDR, KYC_ABI, sbSigner);
+    const already = await kyc.isVerified(addr).catch(()=>false);
+    if (already) { statusEl.textContent='✅ Already KYC-verified'; statusEl.style.color='var(--accent)'; return; }
+    statusEl.textContent='⟳ Verifying...'; statusEl.style.color='var(--text-muted)';
+    const tx = await kyc.verify(addr);
+    await tx.wait();
+    statusEl.textContent='✅ ' + addr.slice(0,8)+'... KYC verified';
+    statusEl.style.color='var(--accent)';
+    showNotification('KYC verified ✓','success');
+    sbLog('success','KYC: '+addr);
+  } catch(e) { statusEl.textContent='❌ '+e.message.slice(0,80); statusEl.style.color='var(--danger)'; }
+}
+
+function sbPublishQR() {
+  const addr = document.getElementById('sbContractAddress').value.trim();
+  if (!addr) { showNotification('Load a contract first','error'); return; }
+  const base = window.location.href.split('?')[0].split('#')[0];
+  const url = base + '?tab=investor&contract=' + addr;
+  const canvas = document.getElementById('sbQRCanvas');
+  canvas.innerHTML = '';
+  new QRCode(canvas, { text:url, width:160, height:160, colorDark:'#000', colorLight:'#fff', correctLevel:QRCode.CorrectLevel.M });
+  document.getElementById('sbQRArea').style.display = 'block';
+  document.getElementById('sbQRUrl').textContent = url;
+  showNotification('QR generated ✓','success');
+}
+
+function sbCopyLink() {
+  const url = document.getElementById('sbQRUrl').textContent;
+  navigator.clipboard.writeText(url).then(()=>showNotification('Link copied ✓','success'));
+}
+
+async function sbApproveCoupon() {
+  if (!sbSigner||!sbContract) return;
+  try {
+    const req = await sbContract.getCouponRequired();
+    const contractAddr = await sbContract.getAddress();
+    const usdc = new ethers.Contract(MOCKUSDC_ADDR, ERC20_ABI, sbSigner);
+    sbLog('info','Approving coupon...');
+    const tx = await usdc.approve(contractAddr, req);
+    await tx.wait();
+    sbLog('success','Approved ✓');
+    showNotification('USDC approved ✓','success');
+  } catch(e) { sbLog('error',e.message); }
+}
+
+async function sbDepositCoupon() {
+  if (!sbSigner||!sbContract) return;
+  try {
+    sbLog('info','Depositing coupon...');
+    const tx = await sbContract.connect(sbSigner).depositCoupon();
+    await tx.wait();
+    sbLog('success','Coupon deposited ✓');
+    showNotification('Coupon deposited ✓','success');
+    await refreshSbState();
+  } catch(e) { sbLog('error',e.message); }
+}
+
+async function sbCloseSubscription() {
+  if (!sbSigner||!sbContract) return;
+  try {
+    sbLog('info','Closing subscription...');
+    const tx = await sbContract.connect(sbSigner).closeSubscription();
+    await tx.wait();
+    sbLog('success','Closed ✓');
+    showNotification('Subscription closed ✓','success');
+    await refreshSbState();
+  } catch(e) { sbLog('error',e.message); }
+}
+
+async function sbIssueAll() {
+  if (!sbSigner||!sbContract) return;
+  try {
+    const state = Number(await sbContract.currentState());
+    if (state === 0) {
+      sbLog('info','Closing subscription first...');
+      const tx = await sbContract.connect(sbSigner).closeSubscription();
+      await tx.wait();
+      sbLog('success','Closed ✓');
+    }
+    const count = await sbContract.getSubscriberCount();
+    const kyc = new ethers.Contract(MOCKKYC_ADDR, KYC_ABI, sbSigner);
+    for (let i = 0; i < Number(count); i++) {
+      const [addr, amount] = await sbContract.getSubscriberAt(i);
+      if (Number(amount) === 0) continue;
+      const already = await kyc.isVerified(addr).catch(()=>false);
+      if (!already) { const t = await kyc.verify(addr); await t.wait(); }
+    }
+    sbLog('info','Issuing all tokens...');
+    const tx = await sbContract.connect(sbSigner).issueAll();
+    await tx.wait();
+    sbLog('success','All tokens issued ✓');
+    showNotification('Tokens issued ✓','success');
+    await refreshSbState();
+  } catch(e) { sbLog('error',e.message); }
+}
+
+async function sbSettle() {
+  if (!sbSigner||!sbContract) return;
+  try {
+    sbLog('info','Calling settleAtMaturity()...');
+    const tx = await sbContract.connect(sbSigner).settleAtMaturity();
+    sbLog('info','Tx: '+tx.hash);
+    await tx.wait();
+    sbLog('success','Settled ✓');
+    showNotification('Contract settled!','success');
+    await refreshSbState();
+  } catch(e) {
+    sbLog('error',e.message);
+    if (e.message.includes('not yet')) sbLog('info','⚠ Maturity not reached yet — wait or reduce delay');
+  }
+}
+
+async function showSbSettledResult() {
+  if (!sbContract) return;
+  try {
+    const [s0, barrier, breached, capital, coupon, finalPrice] = await Promise.all([
+      sbContract.S0(), sbContract.BARRIER(), sbContract.barrierBreached(),
+      sbContract.capitalPerToken(), sbContract.couponPerToken(), sbContract.finalETHPrice()
+    ]);
+    const s0v=Number(s0)/1e8, barv=Number(barrier)/1e8, sT=Number(finalPrice)/1e8;
+    const cap=Number(capital)/1e6, coup=Number(coupon)/1e6;
+    const payoff=cap+coup, pnl=payoff-1000;
+    document.getElementById('sbSettledResult').style.display='block';
+    document.getElementById('sbFinalPrice').textContent='$'+sT.toLocaleString('en-US',{minimumFractionDigits:2});
+    document.getElementById('sbFinalPrice').style.color=breached?'var(--danger)':'var(--accent)';
+    document.getElementById('sbS0Recap').textContent='$'+s0v.toLocaleString('en-US',{minimumFractionDigits:2});
+    document.getElementById('sbBarrierRecap').textContent='$'+barv.toFixed(2)+' ('+((barv/s0v)*100).toFixed(0)+'% S₀)';
+    document.getElementById('sbBreached').textContent=breached?'⚠️ YES — Capital loss':'✅ NO — Full capital';
+    document.getElementById('sbBreached').style.color=breached?'var(--danger)':'var(--accent)';
+    document.getElementById('sbCapital').textContent='$'+cap.toFixed(2);
+    document.getElementById('sbCapital').style.color=breached?'var(--danger)':'var(--accent)';
+    document.getElementById('sbCouponPerTok').textContent='$'+coup.toFixed(2);
+    document.getElementById('sbTotalPayoff').textContent='$'+payoff.toFixed(2);
+    document.getElementById('sbPnl').textContent=(pnl>=0?'+':'')+' $'+pnl.toFixed(2)+' ('+(pnl/10).toFixed(1)+'%)';
+    document.getElementById('sbPnl').style.color=pnl>=0?'var(--accent)':'var(--danger)';
+  } catch(e) {}
+}
 
 </script>
 </body>
