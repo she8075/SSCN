@@ -2005,24 +2005,26 @@ function updateStepper(activeStep) {
 }
 
 async function getIssuerStep() {
-  // Determine which step we're on based on contract state
   if (!issuerContract) return 1;
   try {
+    const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
     const state = await issuerContract.currentState();
     if (Number(state) === 1) return 5; // SETTLED
-    // Check if tokens issued
+
     const supply = await issuerContract.totalSupply();
     if (Number(supply) > 0) return 5; // tokens issued, wait for settle
-    // Check funding
-    const [funded] = await issuerContract.checkFunding();
-    if (!funded) return 2;
-    // Check if published (localStorage)
-    const publishAddr = document.getElementById('publishInvestorAddr')?.value.trim();
+
+    // Check USDC balance directly — funded = balance > 0
+    const usdc = new ethers.Contract(MOCKUSDC_ADDR, ERC20_ABI, prov);
     const contractAddr = document.getElementById('issuerContractAddress').value.trim();
+    const bal = await usdc.balanceOf(contractAddr);
+    if (Number(bal) === 0) return 2; // not funded yet
+
     // Check if any investor subscribed
     const count = await issuerContract.subscriberCount();
-    if (Number(count) > 0) return 4;
-    return 3;
+    if (Number(count) > 0) return 4; // subscribed → can issue
+
+    return 3; // funded, waiting for investor to subscribe
   } catch(e) { return 2; }
 }
 
