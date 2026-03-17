@@ -424,53 +424,53 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
     <div class="section-line"></div>
   </div>
 
-  <div class="stepper" id="issuerStepper">
-    <div class="step active" id="step1">
+  <div class="stepper" id="workflowStepper">
+    <div class="step active" id="wf-step1">
       <div class="step-num">1</div>
       <div class="step-content">
         <div class="step-title">Deploy Contract</div>
         <div class="step-desc">Set barrier, coupon and maturity → deploy on-chain.<br>S₀ is read automatically from Chainlink at deployment.</div>
-        <div class="step-status" id="step1Status"></div>
+        <div class="step-status" id="wf-step1Status"></div>
       </div>
     </div>
-    <div class="step locked" id="step2">
+    <div class="step locked" id="wf-step2">
       <div class="step-num">2</div>
       <div class="step-content">
         <div class="step-title">Fund the Contract</div>
         <div class="step-desc">Mint USDC → Approve & Deposit.<br>Required: $1,100 per token to be issued (capital + coupon).</div>
-        <div class="step-status" id="step2Status"></div>
+        <div class="step-status" id="wf-step2Status"></div>
       </div>
     </div>
-    <div class="step locked" id="step3">
+    <div class="step locked" id="wf-step3">
       <div class="step-num">3</div>
       <div class="step-content">
         <div class="step-title">Publish Term Sheet to Investor</div>
         <div class="step-desc">Send the contract address to the investor.<br>They will review the term sheet and sign their subscription on-chain.</div>
-        <div class="step-status" id="step3Status"></div>
+        <div class="step-status" id="wf-step3Status"></div>
       </div>
     </div>
-    <div class="step locked" id="step4">
+    <div class="step locked" id="wf-step4">
       <div class="step-num">4</div>
       <div class="step-content">
         <div class="step-title">Wait for Investor Subscription</div>
         <div class="step-desc">Investor reviews and signs subscribe() on-chain.<br>Issue Token(s) becomes available once subscribed.</div>
-        <div class="step-status" id="step4Status"></div>
+        <div class="step-status" id="wf-step4Status"></div>
       </div>
     </div>
-    <div class="step locked" id="step5">
+    <div class="step locked" id="wf-step5">
       <div class="step-num">5</div>
       <div class="step-content">
         <div class="step-title">Issue Token(s)</div>
         <div class="step-desc">Call issue() → tokens appear in investor wallet.</div>
-        <div class="step-status" id="step5Status"></div>
+        <div class="step-status" id="wf-step5Status"></div>
       </div>
     </div>
-    <div class="step locked" id="step6">
+    <div class="step locked" id="wf-step6">
       <div class="step-num">6</div>
       <div class="step-content">
         <div class="step-title">Settle at Maturity</div>
         <div class="step-desc">Call settleAtMaturity() once maturity is reached.<br>Chainlink reads S(T) → payoff calculated on-chain.</div>
-        <div class="step-status" id="step6Status"></div>
+        <div class="step-status" id="wf-step6Status"></div>
       </div>
     </div>
   </div>
@@ -1738,36 +1738,63 @@ function advanceStepper(reached) {
 function stepperOnDeploy(addr) {
   advanceStepper(2);
   setStepStatus(1, '\u2713 Deployed: ' + addr.slice(0,10) + '...', 'var(--accent)');
+  // Also update narrative stepper
+  const wf1 = document.getElementById('wf-step1');
+  if (wf1) { wf1.className = 'step done'; document.getElementById('wf-step1Status').textContent = '✓ ' + addr.slice(0,10) + '...'; document.getElementById('wf-step1Status').style.color = 'var(--accent)'; }
+  const wf2 = document.getElementById('wf-step2');
+  if (wf2) wf2.className = 'step active';
 }
 
 // Call after deposit
 function stepperOnDeposit(amount) {
   advanceStepper(3);
   setStepStatus(2, '\u2713 $' + (amount/1e6).toLocaleString() + ' USDC deposited', 'var(--accent)');
+  const wf2 = document.getElementById('wf-step2');
+  if (wf2) { wf2.className = 'step done'; document.getElementById('wf-step2Status').textContent = '✓ $' + (amount/1e6).toLocaleString() + ' USDC deposited'; document.getElementById('wf-step2Status').style.color = 'var(--accent)'; }
+  const wf3 = document.getElementById('wf-step3');
+  if (wf3) wf3.className = 'step active';
 }
 
 // Call after publish
 function stepperOnPublish(investorAddr) {
   advanceStepper(4);
   setStepStatus(3, '\u2713 Published to ' + investorAddr.slice(0,8) + '...', 'var(--accent)');
+  const wf3 = document.getElementById('wf-step3');
+  if (wf3) { wf3.className = 'step done'; document.getElementById('wf-step3Status').textContent = '✓ Published'; document.getElementById('wf-step3Status').style.color = 'var(--accent)'; }
+  const wf4 = document.getElementById('wf-step4');
+  if (wf4) wf4.className = 'step active';
 }
 
 // Call when subscription detected
 function stepperOnSubscribed(investorAddr) {
   advanceStepper(5);
   setStepStatus(4, '\u2713 ' + investorAddr.slice(0,8) + '... subscribed on-chain', 'var(--accent)');
+  const wf4 = document.getElementById('wf-step4');
+  if (wf4) { wf4.className = 'step done'; document.getElementById('wf-step4Status').textContent = '✓ Subscribed'; document.getElementById('wf-step4Status').style.color = 'var(--accent)'; }
+  const wf5 = document.getElementById('wf-step5');
+  if (wf5) wf5.className = 'step active';
 }
 
 // Call after issue
 function stepperOnIssued(n) {
   advanceStepper(6);
   setStepStatus(5, '\u2713 ' + n + ' token(s) issued', 'var(--accent)');
+  const wf5 = document.getElementById('wf-step5');
+  if (wf5) { wf5.className = 'step done'; document.getElementById('wf-step5Status').textContent = '✓ ' + n + ' token(s) issued'; document.getElementById('wf-step5Status').style.color = 'var(--accent)'; }
+  const wf6 = document.getElementById('wf-step6');
+  if (wf6) wf6.className = 'step active';
 }
 
 // Call after settle
 function stepperOnSettled() {
   for (let i = 1; i <= 6; i++) setStep(i, 'done');
   setStepStatus(6, '\u2713 Settled — investors can now redeem', 'var(--accent)');
+  for (let i = 1; i <= 6; i++) {
+    const wf = document.getElementById('wf-step' + i);
+    if (wf) wf.className = 'step done';
+  }
+  const wf6s = document.getElementById('wf-step6Status');
+  if (wf6s) { wf6s.textContent = '✓ Settled'; wf6s.style.color = 'var(--accent)'; }
 }
 
 
@@ -1818,13 +1845,16 @@ function updateStepper(activeStep) {
     el.classList.remove('active','done','locked');
     if (i < activeStep) {
       el.classList.add('done');
-      el.querySelector('.step-circle').textContent = '✓';
+      const circle = el.querySelector('.step-circle');
+      if (circle) circle.textContent = '✓';
     } else if (i === activeStep) {
       el.classList.add('active');
-      el.querySelector('.step-circle').textContent = String(i);
+      const circle = el.querySelector('.step-circle');
+      if (circle) circle.textContent = String(i);
     } else {
       el.classList.add('locked');
-      el.querySelector('.step-circle').textContent = String(i);
+      const circle = el.querySelector('.step-circle');
+      if (circle) circle.textContent = String(i);
     }
     if (panel) {
       panel.classList.remove('active','done');
@@ -1837,7 +1867,8 @@ function updateStepper(activeStep) {
   if (s1 && activeStep >= 2) {
     s1.classList.remove('active','locked');
     s1.classList.add('done');
-    s1.querySelector('.step-circle').textContent = '✓';
+    const c = s1.querySelector('.step-circle');
+    if (c) c.textContent = '✓';
   }
 }
 
@@ -2094,7 +2125,6 @@ switchTab = function(tab) {
         <div class="pricer-row"><span class="pricer-label">Settlement</span><span class="pricer-value">MockUSDC (ERC-20)</span></div>
         <div class="pricer-row"><span class="pricer-label">Compliance</span><span class="pricer-value">ERC-3643 (T-REX)</span></div>
         <div class="pricer-row"><span class="pricer-label">Current subscribers</span><span class="pricer-value" id="ts_subs">—</span></div>
-        <div class="pricer-row"><span class="pricer-label">Funding status</span><span class="pricer-value" id="ts_funding">—</span></div>
         <div class="pricer-row"><span class="pricer-label">Funding status</span><span class="pricer-value" id="ts_funding">—</span></div>
         <div class="pricer-row"><span class="pricer-label">Available / Required</span><span class="pricer-value" style="font-size:12px" id="ts_funding_detail">—</span></div>
       </div>
