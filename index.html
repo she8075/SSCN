@@ -1149,7 +1149,7 @@ function disconnectWallet() {
 // ─── ETH PRICE (hero) ────────────────────────────────────────────────────────
 async function fetchEthPrice() {
   try {
-    const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
+    const prov = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
     const feed = new ethers.Contract(CHAINLINK_ADDR, CHAINLINK_ABI, prov);
     const [,answer] = await feed.latestRoundData();
     const price = Number(answer) / 1e8;
@@ -1226,7 +1226,7 @@ function runPricer() {
 
 async function fetchChainlinkForPricer() {
   try {
-    const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
+    const prov = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
     const feed = new ethers.Contract(CHAINLINK_ADDR, CHAINLINK_ABI, prov);
     const [,answer] = await feed.latestRoundData();
     const price = Number(answer) / 1e8;
@@ -1380,7 +1380,7 @@ async function loadIssuerContract(addr) {
   document.getElementById('investorContractAddress').value = addr;
   document.getElementById('etherscanLinkIssuer').href = 'https://sepolia.etherscan.io/address/' + addr;
   try {
-    const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
+    const prov = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
     issuerContract = new ethers.Contract(addr, SSCN_ABI, signer || prov);
     const [S0, BARRIER, MATURITY, state] = await Promise.all([
       issuerContract.S0(), issuerContract.BARRIER(), issuerContract.MATURITY(), issuerContract.currentState()
@@ -1433,7 +1433,7 @@ async function loadIssuerContract(addr) {
 async function refreshIssuerBalances() {
   if (!issuerAddress || !issuerContract) return;
   try {
-    const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
+    const prov = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
     await refreshStepperState();
     try {
       const [funded, required, available] = await issuerContract.checkFunding();
@@ -1451,7 +1451,7 @@ async function loadInvestorContract(addr) {
   document.getElementById('investorContractAddress').value = addr;
   document.getElementById('etherscanLinkInvestor').href = 'https://sepolia.etherscan.io/address/' + addr;
   try {
-    const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
+    const prov = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
     investorContract = new ethers.Contract(addr, SSCN_ABI, signer || prov);
     const [S0, BARRIER, MATURITY, state] = await Promise.all([
       investorContract.S0(), investorContract.BARRIER(), investorContract.MATURITY(), investorContract.currentState()
@@ -1527,7 +1527,7 @@ async function loadInvestorContract(addr) {
     if (invLiveUpdateInterval) clearInterval(invLiveUpdateInterval);
     invLiveUpdateInterval = setInterval(async () => {
       try {
-        const prov2 = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
+        const prov2 = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
         const feed = new ethers.Contract(CHAINLINK_ADDR, CHAINLINK_ABI, prov2);
         const [,answer] = await feed.latestRoundData();
         const price = Number(answer)/1e8;
@@ -1551,7 +1551,7 @@ async function loadInvestorContract(addr) {
 async function refreshInvestorBalances() {
   if (!investorAddress) return;
   try {
-    const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
+    const prov = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
     const usdc = new ethers.Contract(MOCKUSDC_ADDR, ERC20_ABI, prov);
     const usdcBal = await usdc.balanceOf(investorAddress);
     document.getElementById('invInfoUSDC').textContent = '$' + (Number(usdcBal)/1e6).toFixed(2) + ' USDC';
@@ -1716,7 +1716,7 @@ async function buildInvChart(days) {
   if (!canvas) return;
   const histData = await fetchCoinGeckoHistory(days);
   try {
-    const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
+    const prov = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
     const feed = new ethers.Contract(CHAINLINK_ADDR, CHAINLINK_ABI, prov);
     const [,answer] = await feed.latestRoundData();
     const price = Number(answer)/1e8;
@@ -1886,10 +1886,6 @@ function closeIssueModal() {
   document.getElementById('modalError').textContent = '';
 }
 
-// Close on overlay click
-document.getElementById('issueModal').addEventListener('click', function(e) {
-  if (e.target === this) closeIssueModal();
-});
 
 async function confirmIssue() {
   const addr = document.getElementById('modalInvestorAddr').value.trim();
@@ -2081,7 +2077,7 @@ function updateStepper(activeStep) {
 async function getIssuerStep() {
   if (!issuerContract) return 1;
   try {
-    const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
+    const prov = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
     const state = await issuerContract.currentState();
     if (Number(state) === 1) return 5; // SETTLED
 
@@ -2200,7 +2196,7 @@ function startSubscriptionPolling(contractAddr, investorAddr) {
   if (subscriptionPollInterval) clearInterval(subscriptionPollInterval);
   subscriptionPollInterval = setInterval(async () => {
     try {
-      const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
+      const prov = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
       const contract = new ethers.Contract(contractAddr, SSCN_ABI, prov);
       const subscribed = await contract.hasSubscribed(investorAddr);
       const el = document.getElementById('subscriptionStatus');
@@ -2238,7 +2234,7 @@ async function openTermSheet() {
   const contractAddr = document.getElementById('investorContractAddress').value.trim();
   if (!contractAddr || contractAddr.length < 10) { showNotification('No contract address found', 'error'); return; }
   try {
-    const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
+    const prov = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
     const contract = new ethers.Contract(contractAddr, SSCN_ABI, prov);
     const ts = await contract.getTermSheet();
     const s0 = Number(ts[0]) / 1e8;
@@ -2277,6 +2273,8 @@ function declineTermSheet() {
 document.addEventListener('DOMContentLoaded', () => {
   const modal = document.getElementById('termSheetModal');
   if (modal) modal.addEventListener('click', function(e) { if (e.target === this) declineTermSheet(); });
+  const issueModal = document.getElementById('issueModal');
+  if (issueModal) issueModal.addEventListener('click', function(e) { if (e.target === this) closeIssueModal(); });
 });
 
 async function confirmSubscribe() {
@@ -2330,7 +2328,7 @@ async function checkAlreadySubscribed() {
   const contractAddr = document.getElementById('investorContractAddress').value.trim();
   if (!contractAddr || !investorAddress) return;
   try {
-    const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
+    const prov = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
     const contract = new ethers.Contract(contractAddr, SSCN_ABI, prov);
     const subscribed = await contract.hasSubscribed(investorAddress);
     if (subscribed) {
