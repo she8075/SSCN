@@ -799,7 +799,11 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
         </div>
         <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-bottom:12px;line-height:1.8">
           You will need to approve and deposit <span id="subUsdcNeeded" style="color:var(--accent)">$1,000</span> USDC.<br>
-          Your funds are locked in the smart contract until maturity.
+          Your funds are locked in the smart contract until maturity.<br>
+          <span style="color:var(--text-dim)">My USDC balance: <span id="subUsdcBalance" style="color:var(--text-muted)">—</span></span>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button onclick="mintInvestorUSDC()" class="btn btn-secondary" style="font-size:11px">🪙 Mint USDC (testnet)</button>
         </div>
         <button class="btn btn-primary" onclick="openTermSheet()" style="width:100%">📋 Review Term Sheet & Subscribe</button>
       </div>
@@ -1777,12 +1781,32 @@ async function refreshInvestorBalances() {
     const prov = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
     const usdc = new ethers.Contract(MOCKUSDC_ADDR, ERC20_ABI, prov);
     const usdcBal = await usdc.balanceOf(investorAddress);
-    document.getElementById('invInfoUSDC').textContent = '$' + (Number(usdcBal)/1e6).toFixed(2) + ' USDC';
+    const usdcFormatted = '$' + (Number(usdcBal)/1e6).toFixed(2) + ' USDC';
+    document.getElementById('invInfoUSDC').textContent = usdcFormatted;
+    // Also show in subscribe form
+    const subBal = document.getElementById('subUsdcBalance');
+    if (subBal) subBal.textContent = usdcFormatted;
     const sscnBal = await investorContract.balanceOf(investorAddress);
     document.getElementById('invInfoBalance').textContent = sscnBal.toString() + ' SSCN token(s)';
     // Update sub amount display
     updateSubAmount();
   } catch(e) {}
+}
+
+async function mintInvestorUSDC() {
+  if (!investorSigner) { showNotification('Connect investor wallet first', 'error'); return; }
+  try {
+    const n = parseInt(document.getElementById('subTokenAmount')?.value || '1');
+    const amount = BigInt(n) * 1000000000n;
+    const usdc = new ethers.Contract(MOCKUSDC_ADDR, ERC20_ABI, investorSigner);
+    investorLog('info', 'Minting $' + (n*1000).toLocaleString() + ' USDC...');
+    const tx = await usdc.mint(investorAddress, amount);
+    investorLog('info', 'Tx: ' + tx.hash);
+    await tx.wait();
+    investorLog('success', '$' + (n*1000).toLocaleString() + ' USDC minted ✓');
+    showNotification('USDC minted ✓', 'success');
+    await refreshInvestorBalances();
+  } catch(e) { investorLog('error', e.message); }
 }
 
 function updateSubAmount() {
