@@ -342,9 +342,9 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
 }
 
 /* MODAL */
-.modal-overlay { position: fixed; inset: 0; background: rgba(5,12,8,0.75); z-index: 300; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
+.modal-overlay { position: fixed; inset: 0; background: rgba(5,12,8,0.75); z-index: 300; display: flex; align-items: flex-start; justify-content: center; backdrop-filter: blur(6px); overflow-y: auto; padding: 24px 16px; }
 .modal-overlay.hidden { display: none; }
-.modal { background: var(--surface); border: 1px solid rgba(0,220,100,0.2); padding: 32px; width: 100%; max-width: 480px; position: relative; box-shadow: 0 8px 40px rgba(0,0,0,0.5); border-radius: 4px; }
+.modal { background: var(--surface); border: 1px solid rgba(0,220,100,0.2); padding: 32px; width: 100%; max-width: 480px; position: relative; box-shadow: 0 8px 40px rgba(0,0,0,0.5); border-radius: 4px; margin: auto; max-height: 85vh; overflow-y: auto; }
 .modal-title { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent3); margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
 .modal-body { margin-bottom: 24px; }
 .modal-desc { font-family: var(--mono); font-size: 12px; color: var(--text-muted); line-height: 1.8; margin-bottom: 16px; }
@@ -1427,9 +1427,36 @@ async function loadIssuerContract(addr) {
     interactLog('info', 'Contract loaded: ' + addr);
     await refreshIssuerBalances();
     await refreshStepperState();
+    // Check if any investor already subscribed and notify issuer
+    await checkSubscriptionStatusForIssuer(addr);
   } catch(e) {
     interactLog('error', 'Failed to load: ' + e.message);
   }
+}
+
+async function checkSubscriptionStatusForIssuer(contractAddr) {
+  try {
+    const prov = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
+    const contract = new ethers.Contract(contractAddr, SSCN_ABI, prov);
+    const count = await contract.subscriberCount();
+    if (Number(count) > 0) {
+      const el = document.getElementById('subscriptionStatus');
+      if (el) {
+        el.innerHTML = '✅ <span style="color:var(--accent)">' + count + ' investor(s)</span> subscribed — you can now Issue tokens';
+        el.style.color = 'var(--accent)';
+      }
+      // Also check the investor address from publish field
+      const investorAddr = document.getElementById('publishInvestorAddr')?.value.trim();
+      if (investorAddr && ethers.isAddress(investorAddr)) {
+        const subscribed = await contract.hasSubscribed(investorAddr);
+        if (subscribed) {
+          const ts = await contract.subscriptionTime(investorAddr);
+          const date = new Date(Number(ts) * 1000).toLocaleString();
+          if (el) el.innerHTML = '✅ Investor <span style="color:var(--accent3)">' + investorAddr.slice(0,8) + '...</span> subscribed on ' + date + ' — you can now Issue tokens';
+        }
+      }
+    }
+  } catch(e) {}
 }
 
 async function refreshIssuerBalances() {
@@ -2205,10 +2232,20 @@ function startSubscriptionPolling(contractAddr, investorAddr) {
       if (subscribed) {
         const ts = await contract.subscriptionTime(investorAddr);
         const date = new Date(Number(ts) * 1000).toLocaleString();
-        el.innerHTML = '\u2705 Investor <span style="color:var(--accent3)">' + investorAddr.slice(0,8) + '...</span> subscribed on ' + date + ' \u2014 you can now Issue tokens';
+        el.innerHTML = '✅ Investor <span style="color:var(--accent3)">' + investorAddr.slice(0,8) + '...</span> subscribed on ' + date + ' — you can now Issue tokens';
         el.style.color = 'var(--accent)';
         stepperOnSubscribed(investorAddr);
         clearInterval(subscriptionPollInterval);
+        // Prominent notification for issuer — stays 8 seconds
+        const notif = document.getElementById('notification');
+        notif.textContent = '🎉 Investor signed the term sheet! Issue tokens now.';
+        notif.className = 'notification success show';
+        setTimeout(() => notif.classList.remove('show'), 8000);
+        // Scroll to step 4
+        setTimeout(() => {
+          const panel4 = document.getElementById('stepPanel4');
+          if (panel4) panel4.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 500);
       } else {
         el.textContent = '\u23f3 Waiting for investor subscription...';
         el.style.color = 'var(--text-muted)';
@@ -2241,13 +2278,14 @@ async function openTermSheet() {
     const ts = await contract.getTermSheet();
     const s0 = Number(ts[0]) / 1e8;
     const barrier = Number(ts[1]) / 1e8;
-    const barrierPct = Number(ts[2]) / 100;
+    const barrierPct = (barrier / s0) * 100; // real % of S0
     const maturity = new Date(Number(ts[3]) * 1000).toLocaleString();
     const coupon = Number(ts[4]) / 100;
     const subs = Number(ts[6]);
     document.getElementById('ts_contract').textContent = contractAddr.slice(0,10) + '...' + contractAddr.slice(-8);
     document.getElementById('ts_s0').textContent = '$' + s0.toLocaleString('en-US', {minimumFractionDigits:2});
-    document.getElementById('ts_barrier').textContent = '$' + barrier.toFixed(2) + ' (' + barrierPct.toFixed(0) + '% of S\u2080 \u2014 protection at \u221220%)';
+    const protection = (100 - barrierPct).toFixed(0);
+    document.getElementById('ts_barrier').textContent = '$' + barrier.toFixed(2) + ' (' + barrierPct.toFixed(0) + '% of S\u2080 \u2014 protection at \u2212' + protection + '%)';
     document.getElementById('ts_coupon').textContent = coupon.toFixed(1) + '%/yr \u2014 guaranteed';
     document.getElementById('ts_maturity').textContent = maturity;
     document.getElementById('ts_subs').textContent = subs + ' investor(s)';
@@ -2353,9 +2391,9 @@ async function checkAlreadySubscribed() {
 
 <!-- TERM SHEET MODAL (Investor) -->
 <div class="modal-overlay hidden" id="termSheetModal">
-  <div class="modal" style="max-width:560px">
-    <div class="modal-title" style="color:var(--accent)">📋 Term Sheet — SSCN Reverse Convertible</div>
-    <div class="modal-body">
+  <div class="modal" style="max-width:560px;max-height:90vh;display:flex;flex-direction:column;">
+    <div class="modal-title" style="color:var(--accent);flex-shrink:0">📋 Term Sheet — SSCN Reverse Convertible</div>
+    <div class="modal-body" style="overflow-y:auto;flex:1;padding-right:4px">
       <div class="modal-desc" style="color:var(--text-muted);margin-bottom:16px">
         Please review the product terms carefully before subscribing.<br>
         Your subscription is a formal on-chain commitment.
@@ -2381,7 +2419,7 @@ async function checkAlreadySubscribed() {
       </div>
       <div class="modal-error" id="subscribeError"></div>
     </div>
-    <div class="modal-actions">
+    <div class="modal-actions" style="flex-shrink:0;padding-top:16px;border-top:1px solid var(--border);margin-top:8px">
       <button class="btn btn-secondary" onclick="declineTermSheet()">Decline</button>
       <button class="btn btn-primary" onclick="confirmSubscribe()" id="btnConfirmSubscribe">Subscribe & Sign</button>
     </div>
