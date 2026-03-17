@@ -501,7 +501,7 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
       <div class="info-item"><div class="info-item-label">S₀</div><div class="info-item-value" id="issuerInfoS0">—</div></div>
       <div class="info-item"><div class="info-item-label">Barrier</div><div class="info-item-value orange" id="issuerInfoBarrier">—</div></div>
       <div class="info-item"><div class="info-item-label">Maturity</div><div class="info-item-value" id="issuerInfoMaturity">—</div></div>
-      <div class="info-item"><div class="info-item-label">Time Remaining</div><div class="countdown" id="issuerInfoCountdown">—</div></div>
+      <div class="info-item"><div class="info-item-label">Until Maturity</div><div class="countdown" id="issuerInfoCountdown">—</div></div>
       <div class="info-item"><div class="info-item-label">Subscription End</div><div class="countdown" id="issuerInfoSubEnd">—</div></div>
       <div class="info-item"><div class="info-item-label">Max Supply</div><div class="info-item-value" id="issuerInfoMaxSupply">—</div></div>
       <div class="info-item"><div class="info-item-label">Total Subscribed</div><div class="info-item-value accent" id="issuerInfoSubscribed">—</div></div>
@@ -518,13 +518,44 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
         <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:16px;line-height:1.8">
           Share this QR code with investors. They scan it, load the term sheet, choose how many tokens to subscribe, and deposit their USDC on-chain.
         </div>
+
+        <!-- KYC verify investor -->
+        <div style="margin-bottom:16px;padding:14px;background:var(--surface2);border:1px solid var(--border)">
+          <div class="input-label" style="margin-bottom:8px">KYC Verify Investor (required before they can subscribe)</div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="kycInvestorAddr" placeholder="0x... investor wallet address" style="flex:1;font-family:var(--mono);font-size:12px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);color:var(--text)">
+            <button onclick="kycVerifyInvestor()" class="btn btn-issuer" style="white-space:nowrap">✓ KYC Verify</button>
+          </div>
+          <div id="kycStatus" style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:6px;min-height:14px"></div>
+        </div>
+
         <button onclick="publishAndGenerateQR()" class="btn btn-issuer" style="width:100%">📤 Generate Term Sheet QR</button>
         <div id="publishStatus" style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:8px;min-height:14px"></div>
-        <div id="step2QRArea" style="display:none;margin-top:20px;padding:20px;border:1px solid rgba(0,220,100,0.2);background:rgba(0,220,100,0.03);text-align:center">
-          <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:12px">📱 Share with investor(s)</div>
-          <div id="step2QRCanvas" style="background:#fff;padding:8px;display:inline-block;margin-bottom:12px"></div>
-          <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);line-height:1.8">Investor scans → chooses amount → deposits USDC</div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);margin-top:8px;border-top:1px solid var(--border);padding-top:8px;word-break:break-all" id="step2QRUrl"></div>
+        <div id="step2QRArea" style="display:none;margin-top:20px;padding:20px;border:1px solid rgba(0,220,100,0.2);background:rgba(0,220,100,0.03)">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:16px">📤 Share with investor(s)</div>
+
+          <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">
+            <!-- QR code (mobile) -->
+            <div style="text-align:center">
+              <div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">📱 Scan on mobile</div>
+              <div id="step2QRCanvas" style="background:#fff;padding:8px;display:inline-block"></div>
+            </div>
+
+            <!-- Link (desktop) -->
+            <div style="flex:1;min-width:200px">
+              <div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">🖥 Or share this link</div>
+              <div style="background:var(--bg);border:1px solid var(--border);padding:10px 12px;font-family:var(--mono);font-size:10px;color:var(--accent3);word-break:break-all;margin-bottom:8px;line-height:1.6" id="step2QRUrl"></div>
+              <div style="display:flex;gap:8px">
+                <button onclick="copyInvestorLink()" class="btn btn-secondary" style="font-size:10px;padding:8px 14px">📋 Copy Link</button>
+                <a id="investorLinkAnchor" href="#" target="_blank" style="text-decoration:none">
+                  <button class="btn btn-secondary" style="font-size:10px;padding:8px 14px">↗ Open</button>
+                </a>
+              </div>
+              <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:12px;line-height:1.8">
+                Investor opens the link → connects wallet → reviews term sheet → subscribes & deposits USDC on-chain.
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -582,6 +613,45 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
           <button class="btn btn-secondary">↗ Etherscan</button>
         </a>
       </div>
+
+      <!-- Settlement result — shown after settle() -->
+      <div id="issuerSettledResult" style="display:none;margin-top:20px">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px">Settlement Result</div>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-item-label">S(T) — Final ETH Price</div>
+            <div class="info-item-value" id="issuerFinalPrice">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">S₀ — Initial Price</div>
+            <div class="info-item-value" id="issuerS0Recap">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">Barrier Level</div>
+            <div class="info-item-value orange" id="issuerBarrierRecap">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">Barrier Breached</div>
+            <div class="info-item-value" id="issuerBreached">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">Capital per Token</div>
+            <div class="info-item-value" id="issuerCapital">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">Coupon per Token</div>
+            <div class="info-item-value positive" id="issuerCoupon">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">Total Payoff per Token</div>
+            <div class="info-item-value accent" id="issuerTotalPayoff">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">P&amp;L per Token</div>
+            <div class="info-item-value" id="issuerPnl">—</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="tx-log" id="interactLog"><div class="log-line">// Contract loaded — ready to interact</div></div>
@@ -626,7 +696,7 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
       <div class="info-item"><div class="info-item-label">S₀ — Initial Price</div><div class="info-item-value" id="invInfoS0">—</div></div>
       <div class="info-item"><div class="info-item-label">Barrier</div><div class="info-item-value orange" id="invInfoBarrier">—</div></div>
       <div class="info-item"><div class="info-item-label">Maturity</div><div class="info-item-value" id="invInfoMaturity">—</div></div>
-      <div class="info-item"><div class="info-item-label">Time Remaining</div><div class="countdown" id="invInfoCountdown">—</div></div>
+      <div class="info-item"><div class="info-item-label">Until Maturity</div><div class="countdown" id="invInfoCountdown">—</div></div>
       <div class="info-item"><div class="info-item-label">Subscription End</div><div class="countdown" id="invInfoSubEnd">—</div></div>
       <div class="info-item"><div class="info-item-label">Max Supply</div><div class="info-item-value" id="invInfoMaxSupply">—</div></div>
       <div class="info-item"><div class="info-item-label">Total Subscribed</div><div class="info-item-value" id="invInfoSubscribed">—</div></div>
@@ -636,11 +706,40 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
 
     <!-- Settled info -->
     <div id="invSettledInfo" style="display:none;margin-bottom:20px">
+      <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">Settlement Result</div>
       <div class="info-grid">
-        <div class="info-item"><div class="info-item-label">Barrier Breached</div><div class="info-item-value" id="invInfoBreached">—</div></div>
-        <div class="info-item"><div class="info-item-label">S(T) — Final Price</div><div class="info-item-value" id="invInfoFinalPrice">—</div></div>
-        <div class="info-item"><div class="info-item-label">Capital per Token</div><div class="info-item-value" id="invInfoCapital">—</div></div>
-        <div class="info-item"><div class="info-item-label">Total Payoff</div><div class="info-item-value accent" id="invInfoPayoff">—</div></div>
+        <div class="info-item">
+          <div class="info-item-label">S(T) — Final ETH Price</div>
+          <div class="info-item-value" id="invInfoFinalPrice">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">S₀ — Initial Price</div>
+          <div class="info-item-value" id="invInfoS0Recap">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">Barrier Level</div>
+          <div class="info-item-value orange" id="invInfoBarrierRecap">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">Barrier Breached</div>
+          <div class="info-item-value" id="invInfoBreached">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">Capital per Token</div>
+          <div class="info-item-value" id="invInfoCapital">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">Coupon per Token</div>
+          <div class="info-item-value positive" id="invInfoCoupon">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">Total Payoff per Token</div>
+          <div class="info-item-value accent" id="invInfoPayoff">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">P&amp;L per Token</div>
+          <div class="info-item-value" id="invInfoPnl">—</div>
+        </div>
       </div>
     </div>
 
@@ -1453,13 +1552,90 @@ async function settle() {
     interactLog('success', 'Settled ✓ Block: ' + receipt.blockNumber);
     showNotification('Contract settled!', 'success');
     await loadIssuerContract(document.getElementById('issuerContractAddress').value);
+    // Show settlement result
+    await showIssuerSettlementResult();
   } catch(e) {
     interactLog('error', e.message);
     if (e.message.includes('not yet')) interactLog('info', 'Maturity not reached yet');
   }
 }
 
+async function showIssuerSettlementResult() {
+  if (!issuerContract) return;
+  try {
+    const [s0, barrier, breached, capital, coupon, finalPrice] = await Promise.all([
+      issuerContract.S0(), issuerContract.BARRIER(),
+      issuerContract.barrierBreached(), issuerContract.capitalPerToken(),
+      issuerContract.couponPerToken(), issuerContract.finalETHPrice()
+    ]);
+    const s0v = Number(s0)/1e8, barv = Number(barrier)/1e8;
+    const cap = Number(capital)/1e6, coup = Number(coupon)/1e6;
+    const sT = Number(finalPrice)/1e8;
+    const payoff = cap + coup;
+    const pnl = payoff - 1000;
+
+    document.getElementById('issuerSettledResult').style.display = 'block';
+    document.getElementById('issuerFinalPrice').textContent = '$' + sT.toLocaleString('en-US', {minimumFractionDigits:2});
+    document.getElementById('issuerFinalPrice').style.color = breached ? 'var(--danger)' : 'var(--accent)';
+    document.getElementById('issuerS0Recap').textContent = '$' + s0v.toLocaleString('en-US', {minimumFractionDigits:2});
+    document.getElementById('issuerBarrierRecap').textContent = '$' + barv.toFixed(2) + ' (' + ((barv/s0v)*100).toFixed(0) + '% of S₀)';
+    document.getElementById('issuerBreached').textContent = breached ? '⚠️ YES — Capital loss' : '✅ NO — Full capital returned';
+    document.getElementById('issuerBreached').style.color = breached ? 'var(--danger)' : 'var(--accent)';
+    document.getElementById('issuerCapital').textContent = '$' + cap.toFixed(2);
+    document.getElementById('issuerCapital').style.color = breached ? 'var(--danger)' : 'var(--accent)';
+    document.getElementById('issuerCoupon').textContent = '$' + coup.toFixed(2);
+    document.getElementById('issuerTotalPayoff').textContent = '$' + payoff.toFixed(2);
+    document.getElementById('issuerPnl').textContent = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2) + ' (' + (pnl/10).toFixed(1) + '%)';
+    document.getElementById('issuerPnl').style.color = pnl >= 0 ? 'var(--accent)' : 'var(--danger)';
+  } catch(e) {}
+}
+
+function copyInvestorLink() {
+  const url = document.getElementById('step2QRUrl').textContent;
+  if (!url) return;
+  navigator.clipboard.writeText(url).then(() => {
+    showNotification('Link copied to clipboard ✓', 'success');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showNotification('Link copied ✓', 'success');
+  });
+}
+
 // ─── PUBLISH & QR ─────────────────────────────────────────────────────────────
+async function kycVerifyInvestor() {
+  if (!issuerSigner) { showNotification('Connect issuer wallet first', 'error'); return; }
+  const addr = document.getElementById('kycInvestorAddr').value.trim();
+  const statusEl = document.getElementById('kycStatus');
+  if (!addr || !ethers.isAddress(addr)) { statusEl.textContent = '⚠ Enter a valid address'; statusEl.style.color = 'var(--danger)'; return; }
+  try {
+    statusEl.textContent = '⟳ Verifying KYC...'; statusEl.style.color = 'var(--text-muted)';
+    const kyc = new ethers.Contract(MOCKKYC_ADDR, KYC_ABI, issuerSigner);
+    // Check if already verified
+    const already = await kyc.isVerified(addr);
+    if (already) {
+      statusEl.textContent = '✅ ' + addr.slice(0,8) + '... already KYC-verified';
+      statusEl.style.color = 'var(--accent)';
+      return;
+    }
+    const tx = await kyc.verify(addr);
+    await tx.wait();
+    statusEl.textContent = '✅ ' + addr.slice(0,8) + '... KYC verified — investor can now subscribe';
+    statusEl.style.color = 'var(--accent)';
+    showNotification('KYC verified ✓', 'success');
+    // Auto-fill QR with this address if needed
+    interactLog('success', 'KYC verified: ' + addr);
+  } catch(e) {
+    statusEl.textContent = '❌ ' + e.message.slice(0, 80);
+    statusEl.style.color = 'var(--danger)';
+    interactLog('error', e.message);
+  }
+}
 let _step2QR = null;
 function publishAndGenerateQR() {
   const contractAddr = document.getElementById('issuerContractAddress').value.trim();
@@ -1472,7 +1648,8 @@ function publishAndGenerateQR() {
   if (_step2QR) { _step2QR = null; }
   _step2QR = new QRCode(canvas, { text: url, width: 180, height: 180, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
   document.getElementById('step2QRArea').style.display = 'block';
-  document.getElementById('step2QRUrl').textContent = url.length > 60 ? url.slice(0,60) + '...' : url;
+  document.getElementById('step2QRUrl').textContent = url;
+  document.getElementById('investorLinkAnchor').href = url;
   statusEl.textContent = '✅ QR ready — share with investor(s)';
   statusEl.style.color = 'var(--accent)';
   showNotification('QR generated', 'success');
@@ -1561,11 +1738,20 @@ async function loadInvestorContract(addr) {
         investorContract.couponPerToken(), investorContract.finalETHPrice()
       ]);
       const cap = Number(capital)/1e6, coup = Number(coupon)/1e6, sT = Number(finalPrice)/1e8;
-      document.getElementById('invInfoBreached').textContent = breached ? 'YES' : 'NO';
+      const payoff = cap + coup, pnl = payoff - 1000;
+
+      document.getElementById('invInfoBreached').textContent = breached ? '⚠️ YES — Capital loss' : '✅ NO — Full capital returned';
       document.getElementById('invInfoBreached').style.color = breached ? 'var(--danger)' : 'var(--accent)';
       document.getElementById('invInfoFinalPrice').textContent = '$' + sT.toLocaleString('en-US', {minimumFractionDigits:2});
+      document.getElementById('invInfoFinalPrice').style.color = breached ? 'var(--danger)' : 'var(--accent)';
+      document.getElementById('invInfoS0Recap').textContent = '$' + s0.toLocaleString('en-US', {minimumFractionDigits:2});
+      document.getElementById('invInfoBarrierRecap').textContent = '$' + bar.toFixed(2) + ' (' + ((bar/s0)*100).toFixed(0) + '% of S₀)';
       document.getElementById('invInfoCapital').textContent = '$' + cap.toFixed(2);
-      document.getElementById('invInfoPayoff').textContent = '$' + (cap+coup).toFixed(2);
+      document.getElementById('invInfoCapital').style.color = breached ? 'var(--danger)' : 'var(--accent)';
+      document.getElementById('invInfoCoupon').textContent = '$' + coup.toFixed(2);
+      document.getElementById('invInfoPayoff').textContent = '$' + payoff.toFixed(2);
+      document.getElementById('invInfoPnl').textContent = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2) + ' (' + (pnl/10).toFixed(1) + '%)';
+      document.getElementById('invInfoPnl').style.color = pnl >= 0 ? 'var(--accent)' : 'var(--danger)';
       if (investorAddress) await showPayoffPreview(breached, cap, coup);
     } else {
       document.getElementById('invSettledInfo').style.display = 'none';
