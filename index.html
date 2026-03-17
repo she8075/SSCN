@@ -307,6 +307,8 @@ input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px r
 .legend-item { display: flex; align-items: center; gap: 6px; }
 .legend-dot { width: 20px; height: 2px; }
 #priceChartCanvas { width: 100% !important; height: 220px !important; }
+#invPriceChartCanvas { width: 100% !important; height: 200px !important; }
+.price-chart-wrapper { max-height: 320px; }
 
 /* SETTLED INFO */
 #settledInfo { margin-bottom: 20px; }
@@ -920,11 +922,21 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
 
     <!-- Subscription area -->
     <div id="subscribeArea" style="display:none;margin-bottom:16px">
+
+      <!-- Cross-device: always visible when contract ACTIVE, no localStorage needed -->
+      <div id="reviewTermSheetBanner" style="display:none;padding:16px;border:1px solid rgba(179,136,255,0.3);background:rgba(179,136,255,0.04);font-family:var(--mono);font-size:12px;margin-bottom:12px">
+        <div style="color:var(--accent3);margin-bottom:8px">📋 Contract ready — review the term sheet to subscribe</div>
+        <div style="color:var(--text-muted);font-size:11px;margin-bottom:12px">Connect your wallet and sign your subscription on-chain.</div>
+        <button class="btn btn-primary" onclick="openTermSheet()">Review Term Sheet & Subscribe</button>
+      </div>
+
+      <!-- localStorage banner (same device only) -->
       <div id="pendingContractBanner" style="padding:16px;border:1px solid rgba(0,255,180,0.3);background:rgba(0,255,180,0.04);font-family:var(--mono);font-size:12px;margin-bottom:12px;display:none">
         <div style="color:var(--accent);margin-bottom:8px">📋 A contract is waiting for your review</div>
         <div style="color:var(--text-muted);font-size:11px" id="pendingContractInfo"></div>
         <button class="btn btn-primary" style="margin-top:12px" onclick="openTermSheet()">Review Term Sheet</button>
       </div>
+
       <div id="subscribedBanner" style="padding:16px;border:1px solid rgba(0,255,180,0.3);background:rgba(0,255,180,0.04);font-family:var(--mono);font-size:12px;margin-bottom:12px;display:none">
         <div style="color:var(--accent)">✅ Subscribed — waiting for token issuance</div>
         <div style="color:var(--text-muted);font-size:11px;margin-top:4px" id="subscribedInfo"></div>
@@ -1464,6 +1476,7 @@ async function loadInvestorContract(addr) {
 
     if (!isActive) {
       document.getElementById('invSettledInfo').style.display = 'block';
+      document.getElementById('subscribeArea').style.display = 'none';
       const [breached, capital, coupon, finalPrice] = await Promise.all([
         investorContract.barrierBreached(), investorContract.capitalPerToken(),
         investorContract.couponPerToken(), investorContract.finalETHPrice()
@@ -1475,11 +1488,32 @@ async function loadInvestorContract(addr) {
       document.getElementById('invInfoFinalPrice').style.color = breached ? 'var(--danger)' : 'var(--accent)';
       document.getElementById('invInfoCapital').textContent = '$' + cap.toFixed(2);
       document.getElementById('invInfoPayoff').textContent = '$' + (cap+coup).toFixed(2);
-      // Show payoff preview
       await showPayoffPreview(breached, cap, coup);
     } else {
       document.getElementById('invSettledInfo').style.display = 'none';
       document.getElementById('payoffPreview').style.display = 'none';
+
+      // Show subscription area — works cross-device (no localStorage needed)
+      const subsAddr = investorAddress;
+      let alreadySubscribed = false;
+      if (subsAddr) {
+        try {
+          alreadySubscribed = await investorContract.hasSubscribed(subsAddr);
+        } catch(e) {}
+      }
+      document.getElementById('subscribeArea').style.display = 'block';
+      if (alreadySubscribed) {
+        document.getElementById('subscribedBanner').style.display = 'block';
+        document.getElementById('reviewTermSheetBanner').style.display = 'none';
+        document.getElementById('pendingContractBanner').style.display = 'none';
+        const ts = await investorContract.subscriptionTime(subsAddr);
+        document.getElementById('subscribedInfo').textContent = 'Subscribed on ' + new Date(Number(ts)*1000).toLocaleString();
+      } else {
+        document.getElementById('subscribedBanner').style.display = 'none';
+        document.getElementById('reviewTermSheetBanner').style.display = 'block';
+        // Also check localStorage for same-device flow
+        checkPendingContract();
+      }
     }
 
     // Price chart
@@ -1738,14 +1772,22 @@ function toggleQR(tab) {
     return;
   }
 
-  // Build URL
+  // Build URL — embed contract address for investor QR
   const base = window.location.href.split('?')[0].split('#')[0];
-  const url = base + '?tab=' + tab;
+  let url = base + '?tab=' + tab;
+  if (tab === 'investor') {
+    const contractAddr = document.getElementById('issuerContractAddress')?.value.trim();
+    if (contractAddr && ethers.isAddress(contractAddr)) {
+      url += '&contract=' + contractAddr;
+    }
+  }
 
   // Update label
-  label.textContent = tab === 'issuer' ? '📱 Open as Émetteur' : '📱 Open as Investisseur';
+  label.textContent = tab === 'issuer' ? '📱 Open as Émetteur' : '📱 Send to Investor';
   label.style.color = tab === 'issuer' ? 'var(--accent3)' : 'var(--accent)';
-  hint.textContent = 'Scan with MetaMask mobile — connects as ' + (tab === 'issuer' ? 'issuer' : 'investor');
+  hint.textContent = tab === 'investor'
+    ? 'Investor scans → page opens on their device → term sheet ready to sign'
+    : 'Scan with MetaMask mobile — connects as issuer';
 
   // Clear previous QR
   canvas.innerHTML = '';
@@ -1775,21 +1817,49 @@ function toggleQR(tab) {
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-window.addEventListener('load', () => {
-  // Handle ?tab= URL param (for mobile QR deep link)
+window.addEventListener('load', async () => {
   const urlParams = new URLSearchParams(window.location.search);
   const tabParam = urlParams.get('tab');
+  const contractParam = urlParams.get('contract');
+
+  // Switch to correct tab first
   if (tabParam === 'investor') switchTab('investor');
 
   runPricer();
   fetchEthPrice();
   fetchChainlinkForPricer();
   setInterval(fetchEthPrice, 60000);
-  setTimeout(() => {
-    loadIssuerContract('0xf9588A62fdf90957E9A6Bb23bf8f03Ec95b4458C');
-    loadInvestorContract('0xf9588A62fdf90957E9A6Bb23bf8f03Ec95b4458C');
-  }, 500);
+
+  // If investor arrived via QR with contract address → load it and show popup
+  if (tabParam === 'investor' && contractParam && ethers.isAddress(contractParam)) {
+    document.getElementById('investorContractAddress').value = contractParam;
+    setTimeout(async () => {
+      await loadInvestorContract(contractParam);
+      // Show "term sheet waiting" notification popup
+      showTermSheetNotification(contractParam);
+    }, 800);
+  } else {
+    setTimeout(() => {
+      loadIssuerContract('0xf9588A62fdf90957E9A6Bb23bf8f03Ec95b4458C');
+      loadInvestorContract('0xf9588A62fdf90957E9A6Bb23bf8f03Ec95b4458C');
+    }, 500);
+  }
 });
+
+function showTermSheetNotification(contractAddr) {
+  // Show the subscription area with the pending banner
+  document.getElementById('subscribeArea').style.display = 'block';
+  document.getElementById('pendingContractBanner').style.display = 'block';
+  document.getElementById('subscribedBanner').style.display = 'none';
+  document.getElementById('pendingContractInfo').textContent = 'Contract: ' + contractAddr.slice(0,10) + '...' + contractAddr.slice(-8);
+
+  // Also show a prominent notification popup
+  const notif = document.getElementById('notification');
+  notif.innerHTML = '📋 A term sheet is waiting for your review';
+  notif.className = 'notification info show';
+  // Keep it visible longer than usual
+  setTimeout(() => notif.classList.remove('show'), 6000);
+}
 
 // ─── ISSUE MODAL ──────────────────────────────────────────────────────────────
 function openIssueModal() {
