@@ -733,22 +733,33 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
 
     <!-- STEP 3 — PUBLISH TO INVESTOR -->
     <div class="step-panel" id="stepPanel3">
-      <div class="step-panel-title">Step 3 — Publish term sheet to investor</div>
+      <div class="step-panel-title">Step 3 — Send term sheet to investor</div>
       <div id="stepPanel3Done" style="display:none">
-        <div class="step-done-msg">✅ Published — waiting for investor subscription</div>
+        <div class="step-done-msg">✅ Term sheet sent — waiting for investor subscription</div>
         <div class="step-done-detail" id="stepPanel3Detail"></div>
+        <div id="subscriptionStatus" style="font-family:var(--mono);font-size:11px;margin-top:8px;min-height:14px"></div>
       </div>
       <div id="stepPanel3Form">
-        <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:12px;line-height:1.8">
-          The contract is funded. You can now send the term sheet to your investor.<br>
-          They will review and sign their subscription on-chain before you issue tokens.
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:16px;line-height:1.8">
+          Enter the investor's wallet address. A QR code will be generated — the investor scans it, the term sheet loads on their device, and they sign their subscription on-chain.
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="text" id="publishInvestorAddr" placeholder="0x... investor wallet address" style="flex:1;font-family:var(--mono);font-size:12px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">
-          <button onclick="publishToInvestor()" class="btn btn-issuer" style="white-space:nowrap">📤 Publish</button>
+        <div class="input-label">Investor wallet address</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+          <input type="text" id="publishInvestorAddr" placeholder="0x..." style="flex:1;font-family:var(--mono);font-size:12px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);color:var(--text)" oninput="onInvestorAddrInput()">
         </div>
+        <button onclick="publishAndGenerateQR()" class="btn btn-issuer" id="btnPublish" style="width:100%">📤 Publish & Generate QR</button>
         <div id="publishStatus" style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:8px;min-height:14px"></div>
-        <div id="subscriptionStatus" style="font-family:var(--mono);font-size:11px;margin-top:8px;min-height:14px"></div>
+
+        <!-- QR inline (hidden until publish) -->
+        <div id="step3QRArea" style="display:none;margin-top:20px;padding:20px;border:1px solid rgba(0,220,100,0.2);background:rgba(0,220,100,0.03);text-align:center">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:12px">📱 Share with investor</div>
+          <div id="step3QRCanvas" style="background:#fff;padding:8px;display:inline-block;margin-bottom:12px"></div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);line-height:1.8">
+            Investor scans → page opens on their device<br>
+            Term sheet ready to review & sign
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:8px;border-top:1px solid var(--border);padding-top:8px" id="step3QRUrl"></div>
+        </div>
       </div>
     </div>
 
@@ -756,16 +767,12 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
     <div class="step-panel" id="stepPanel4">
       <div class="step-panel-title">Step 4 — Issue tokens to investor</div>
       <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:12px;line-height:1.8">
-        The investor has subscribed. You can now issue the tokens to their wallet.
+        The investor has subscribed on-chain. Issue the tokens to their wallet.
       </div>
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;background:var(--surface2);border:1px solid var(--border);padding:14px">
-        <div style="flex:1">
-          <div class="input-label" style="margin-bottom:4px">Investor address (auto-filled from publish)</div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="text" id="investorAddress" placeholder="0x..." style="flex:1;font-family:var(--mono);font-size:12px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);color:var(--text)">
-            <button onclick="document.getElementById('investorAddress').value=userAddress||''" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);font-family:var(--mono);font-size:10px;padding:8px 12px;cursor:pointer;white-space:nowrap;">Use my wallet</button>
-          </div>
-        </div>
+      <div style="padding:14px;background:var(--surface2);border:1px solid var(--border);margin-bottom:12px;font-family:var(--mono);font-size:12px">
+        <div style="color:var(--text-muted);font-size:10px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Investor address</div>
+        <div style="color:var(--accent)" id="issueInvestorAddrDisplay">—</div>
+        <input type="hidden" id="investorAddress">
       </div>
       <div class="actions-row">
         <button class="btn btn-issuer" onclick="openIssueModal()" id="btnIssue">Issue Token(s)</button>
@@ -1424,13 +1431,10 @@ async function loadIssuerContract(addr) {
 }
 
 async function refreshIssuerBalances() {
-  if (!userAddress || !issuerContract) return;
+  if (!issuerAddress || !issuerContract) return;
   try {
     const prov = provider || new ethers.JsonRpcProvider('https://rpc.sepolia.org');
-    const usdc = new ethers.Contract(MOCKUSDC_ADDR, ERC20_ABI, prov);
-    // Refresh stepper
     await refreshStepperState();
-    // Refresh funding
     try {
       const [funded, required, available] = await issuerContract.checkFunding();
       const req = Number(required)/1e6, avail = Number(available)/1e6;
@@ -2003,9 +2007,9 @@ function stepperOnSettled() {
 
 // ─── PAYOFF PREVIEW ───────────────────────────────────────────────────────────
 async function showPayoffPreview(breached, capitalPerTok, couponPerTok) {
-  if (!userAddress || !investorContract) return;
+  if (!investorAddress || !investorContract) return;
   try {
-    const balance = await investorContract.balanceOf(userAddress);
+    const balance = await investorContract.balanceOf(investorAddress);
     const bal = Number(balance);
     const totalPayoff = (capitalPerTok + couponPerTok) * bal;
     const totalCapital = capitalPerTok * bal;
@@ -2120,9 +2124,12 @@ async function refreshStepperState() {
     document.getElementById('stepPanel3Form').style.display = 'none';
     const investorAddr = document.getElementById('publishInvestorAddr')?.value.trim();
     document.getElementById('stepPanel3Detail').textContent =
-      investorAddr ? 'Investor ' + investorAddr.slice(0,8) + '... subscribed' : 'Investor subscribed';
+      investorAddr ? 'Sent to ' + investorAddr.slice(0,8) + '...' + investorAddr.slice(-6) : 'Investor subscribed';
     // Auto-fill investor address in step 4
-    if (investorAddr) document.getElementById('investorAddress').value = investorAddr;
+    if (investorAddr) {
+      document.getElementById('investorAddress').value = investorAddr;
+      document.getElementById('issueInvestorAddrDisplay').textContent = investorAddr;
+    }
   } else {
     const d = document.getElementById('stepPanel3Done');
     const f = document.getElementById('stepPanel3Form');
@@ -2131,22 +2138,62 @@ async function refreshStepperState() {
   }
 }
 
-// ─── PUBLISH & SUBSCRIBE FLOW ─────────────────────────────────────────────────
+// ─── PUBLISH & QR ─────────────────────────────────────────────────────────────
+function onInvestorAddrInput() {
+  // Reset QR area if address changes
+  document.getElementById('step3QRArea').style.display = 'none';
+  document.getElementById('step3QRCanvas').innerHTML = '';
+}
 
-function publishToInvestor() {
+let _step3QR = null;
+function publishAndGenerateQR() {
   const investorAddr = document.getElementById('publishInvestorAddr').value.trim();
   const contractAddr = document.getElementById('issuerContractAddress').value.trim();
-  if (!contractAddr || contractAddr.length < 10) { showNotification('Load a contract first', 'error'); return; }
-  if (!investorAddr || !ethers.isAddress(investorAddr)) { showNotification('Enter a valid investor address', 'error'); return; }
-  const key = 'sscn_pending_' + investorAddr.toLowerCase();
-  const payload = { contractAddr, publishedAt: Date.now(), publishedBy: userAddress || 'unknown' };
-  localStorage.setItem(key, JSON.stringify(payload));
-  document.getElementById('publishStatus').textContent = '\u2705 Published \u2014 investor can now review the term sheet';
-  document.getElementById('publishStatus').style.color = 'var(--accent)';
+  const statusEl = document.getElementById('publishStatus');
+
+  if (!contractAddr || contractAddr.length < 10) {
+    showNotification('Load a contract first', 'error'); return;
+  }
+  if (!investorAddr || !ethers.isAddress(investorAddr)) {
+    statusEl.textContent = '⚠ Enter a valid investor wallet address';
+    statusEl.style.color = 'var(--danger)'; return;
+  }
+
+  // Save investor address for Issue step
+  document.getElementById('investorAddress').value = investorAddr;
+  document.getElementById('issueInvestorAddrDisplay').textContent = investorAddr;
+
+  // Build QR URL
+  const base = window.location.href.split('?')[0].split('#')[0];
+  const url = base + '?tab=investor&contract=' + contractAddr;
+
+  // Generate QR
+  const canvas = document.getElementById('step3QRCanvas');
+  canvas.innerHTML = '';
+  if (_step3QR) { _step3QR = null; }
+  _step3QR = new QRCode(canvas, {
+    text: url,
+    width: 180,
+    height: 180,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+
+  // Show QR area
+  document.getElementById('step3QRArea').style.display = 'block';
+  document.getElementById('step3QRUrl').textContent = url.length > 60 ? url.slice(0,60) + '...' : url;
+
+  statusEl.textContent = '✅ Term sheet ready — share the QR with the investor';
+  statusEl.style.color = 'var(--accent)';
+
+  showNotification('QR generated — share with investor', 'success');
+
+  // Start polling for subscription
   startSubscriptionPolling(contractAddr, investorAddr);
-  showNotification('Contract published to investor', 'success');
-  stepperOnPublish(investorAddr);
 }
+
+function publishToInvestor() { publishAndGenerateQR(); } // legacy alias
 
 let subscriptionPollInterval = null;
 function startSubscriptionPolling(contractAddr, investorAddr) {
@@ -2298,12 +2345,8 @@ async function checkAlreadySubscribed() {
   } catch(e) {}
 }
 
-// Hook into tab switch to check subscription status
-const _origSwitch = switchTab;
-switchTab = function(tab) {
-  _origSwitch(tab);
-  if (tab === 'investor' && userAddress) checkAlreadySubscribed();
-};
+
+
 
 </script>
 
