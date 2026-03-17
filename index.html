@@ -1242,80 +1242,6 @@ function toggleTestPanel() {
   btn.textContent = isHidden ? '▲ Hide' : '▼ Show';
 }
 
-const MOCK_FEED_BYTECODE = '0x608060405234801561000f575f80fd5b506040516102f83803806102f883398181016040528101906100319190610076565b8061003b5f82610051565b5042600181905550506100a2565b60028190556040518181527fa2fb9a7e1ca59f9d9a6c8d8a9b3a3b9a4f6d3e2c1b0a9f8e7d6c5b4a3f2e1d090602001604051602081830303815290604052815260200190505060405180910390a150565b5f6020828403121561008757610086610099565b5b5f610094848285016100ad565b91505092915050565b5f80fd5b5f8160000b9050919050565b6100b5816100a1565b81146100bf575f80fd5b5056fea264697066735822122000000000000000000000000000000000000000000000000000000000000000000064736f6c634300081400330000000000000000000000000000000000000000';
-
-// Use inline factory approach instead
-const MOCK_FEED_ABI = [
-  'constructor(int256 _price)',
-  'function setPrice(int256 _price) external',
-  'function latestRoundData() external view returns (uint80,int256,uint256,uint256,uint80)',
-  'function price() view returns (int256)'
-];
-
-// Minimal MockPriceFeed bytecode (compiled inline)
-const MOCK_FEED_SRC_BYTECODE = '0x6080604052348015610010576000805ffd5b506040516101e43803806101e483398181016040528101906100329190610099565b806000819055504260018190555050610111565b5f80fd5b5f8160000b9050919050565b61005f8161004a565b811461006957600080fd5b50565b5f8151905061007a81610056565b92915050565b5f6020828403121561009557610094610045565b5b5f6100a28482850161006c565b91505092915050565b5f8160000b9050919050565b6100c0816100ab565b82525050565b5f6020820190506100d95f8301846100b7565b92915050565b610065806100ec5f395ff3fe6080604052348015600e575f80fd5b50600436106039575f3560e01c80635e57966d14603d578063feaf968c146059575b5f80fd5b605760048036038101906053919060de565b6075565b005b605f6084565b6040516070959493929190610128565b60405180910390f35b805f81905550426001819055505b565b5f805f805f60015460005469ffffffffffffffffffff8616935069ffffffffffffffffffff90921691504292509050909192939495565b5f8160000b9050919050565b60d5816096565b8114815f80fd5b5f6020828403121560ef5760ee60ab565b5b5f60fb848285016100cb565b91505092915050565b5f69ffffffffffffffffffff82169050919050565b610121816101044565b82525050565b5f60a082019050603a5f830188610118565b6047602083018760b7565b6054604083018660b7565b6061606083018560b7565b606e608083018461011856fea26469706673582212200000000000000000000000000000000000000000000000000000000000000000064736f6c63430008140033';
-
-let mockFeedContract = null;
-let mockFeedAddress = null;
-
-function mockLog(type, msg) {
-  const log = document.getElementById('mockLog');
-  if (!log) return;
-  const line = document.createElement('div');
-  line.className = 'log-line ' + type;
-  line.textContent = '[' + new Date().toLocaleTimeString('en-GB') + '] ' + msg;
-  log.appendChild(line); log.scrollTop = log.scrollHeight;
-}
-
-async function deployMockFeed() {
-  if (!issuerSigner) { showNotification('Connect issuer wallet first', 'error'); return; }
-  const price = document.getElementById('mockPrice').value.trim();
-  if (!price) return;
-  try {
-    mockLog('info', 'Deploying MockPriceFeed with price ' + price + '...');
-    // Deploy via raw transaction using the compiled bytecode
-    const factory = new ethers.ContractFactory(MOCK_FEED_ABI, MOCK_FEED_SRC_BYTECODE, issuerSigner);
-    const contract = await factory.deploy(BigInt(price));
-    await contract.waitForDeployment();
-    mockFeedAddress = await contract.getAddress();
-    mockFeedContract = contract;
-    document.getElementById('mockFeedAddr').textContent = mockFeedAddress;
-    document.getElementById('copyMockAddrBtn').style.display = 'inline-block';
-    mockLog('success', 'MockPriceFeed deployed: ' + mockFeedAddress);
-    showNotification('MockPriceFeed deployed ✓', 'success');
-  } catch(e) {
-    mockLog('error', e.message);
-  }
-}
-
-async function setMockPrice() {
-  if (!issuerSigner) { showNotification('Connect issuer wallet first', 'error'); return; }
-  const addrEl = document.getElementById('mockFeedAddr').textContent;
-  if (!addrEl || addrEl === '—') { showNotification('Deploy MockPriceFeed first', 'error'); return; }
-  const newPrice = document.getElementById('mockNewPrice').value.trim();
-  const statusEl = document.getElementById('mockPriceStatus');
-  try {
-    statusEl.textContent = '⟳ Setting price...'; statusEl.style.color = 'var(--text-muted)';
-    const contract = mockFeedContract || new ethers.Contract(addrEl, MOCK_FEED_ABI, issuerSigner);
-    const tx = await contract.connect(issuerSigner).setPrice(BigInt(newPrice));
-    await tx.wait();
-    const priceUsd = (Number(newPrice) / 1e8).toLocaleString('en-US', {minimumFractionDigits:2});
-    statusEl.textContent = '✅ Price set to $' + priceUsd;
-    statusEl.style.color = 'var(--accent)';
-    mockLog('success', 'Price set to $' + priceUsd + ' — now call settleAtMaturity()');
-    showNotification('Mock price set: $' + priceUsd, 'success');
-  } catch(e) {
-    statusEl.textContent = '❌ ' + e.message.slice(0,80);
-    statusEl.style.color = 'var(--danger)';
-    mockLog('error', e.message);
-  }
-}
-
-function copyMockAddr() {
-  const addr = document.getElementById('mockFeedAddr').textContent;
-  navigator.clipboard.writeText(addr).then(() => showNotification('Address copied ✓', 'success'));
-}
-
 // ─── SANDBOX ──────────────────────────────────────────────────────────────────
 const MOCK_FEED_BYTECODE = '0x608060405234801561000f575f80fd5b5060405161031c38038061031c8339818101604052810190610031919061007b565b805f8190555042600181905550506100a6565b5f80fd5b5f819050919050565b61005a81610048565b8114610064575f80fd5b50565b5f8151905061007581610051565b92915050565b5f602082840312156100905761008f610044565b5b5f61009d84828501610067565b91505092915050565b610269806100b35f395ff3fe608060405234801561000f575f80fd5b506004361061004a575f3560e01c80637519ab501461004e578063a035b1fe1461006c578063f7a308061461008a578063feaf968c146100a6575b5f80fd5b6100566100c8565b604051610063919061011b565b60405180910390f35b6100746100ce565b604051610081919061014c565b60405180910390f35b6100a4600480360381019061009f9190610193565b6100d3565b005b6100ae6100e3565b6040516100bf9594939291906101e2565b60405180910390f35b60015481565b5f5481565b805f819055504260018190555050565b5f805f805f60015f54424260015494509450945094509450909192939495565b5f819050919050565b61011581610103565b82525050565b5f60208201905061012e5f83018461010c565b92915050565b5f819050919050565b61014681610134565b82525050565b5f60208201905061015f5f83018461013d565b92915050565b5f80fd5b61017281610134565b811461017c575f80fd5b50565b5f8135905061018d81610169565b92915050565b5f602082840312156101a8576101a7610165565b5b5f6101b58482850161017f565b91505092915050565b5f69ffffffffffffffffffff82169050919050565b6101dc816101be565b82525050565b5f60a0820190506101f55f8301886101d3565b610202602083018761013d565b61020f604083018661010c565b61021c606083018561010c565b61022960808301846101d3565b969550505050505056fea26469706673582212206eddc1cab11a145167789669dd819168e643a1cd8b002e732ee701279c6b7d2064736f6c63430008140033';
 const MOCK_FEED_ABI = [
@@ -1723,8 +1649,9 @@ function switchTab(tab) {
 
 // ─── WALLET ───────────────────────────────────────────────────────────────────
 async function connectWallet() {
-  const activeTab = document.getElementById('panelIssuer').classList.contains('active') ? 'issuer' : 'investor';
-  await connectWalletForTab(activeTab);
+  const tab = document.getElementById('panelSandbox').classList.contains('active') ? 'sandbox' :
+              document.getElementById('panelInvestor').classList.contains('active') ? 'investor' : 'issuer';
+  await connectWalletForTab(tab);
 }
 
 async function connectWalletForTab(tab) {
