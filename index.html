@@ -2041,7 +2041,14 @@ function declineTermSheet() {
 
 async function confirmSubscribe() {
   if (!investorSigner) { showNotification('Connect investor wallet first', 'error'); return; }
-  const contractAddr = document.getElementById('investorContractAddress').value.trim();
+  let contractAddr = document.getElementById('investorContractAddress').value.trim();
+  // Fallback: get address from loaded contract
+  if ((!contractAddr || contractAddr.length < 10) && investorContract) {
+    try { contractAddr = await investorContract.getAddress(); } catch(e) {}
+  }
+  if (!contractAddr || contractAddr.length < 10) {
+    showNotification('No contract loaded', 'error'); return;
+  }
   const n = parseInt(document.getElementById('subTokenAmount')?.value || '1');
   const errEl = document.getElementById('subscribeError');
   const btn = document.getElementById('btnConfirmSubscribe');
