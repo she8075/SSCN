@@ -1361,6 +1361,19 @@ async function loadIssuerContract(addr) {
     const mat = Number(MATURITY), subEnd = Number(SUB_END);
     _issuerMat = mat; _issuerSubEnd = subEnd;
     const stateNum = Number(state);
+
+    // Update static info grid values
+    document.getElementById('issuerInfoState').textContent = stateLabel(stateNum);
+    document.getElementById('issuerInfoS0').textContent = '$' + s0.toLocaleString('en-US', {minimumFractionDigits:2});
+    document.getElementById('issuerInfoBarrier').textContent = '$' + bar.toFixed(2) + ' (' + ((bar/s0)*100).toFixed(0) + '% S₀)';
+    document.getElementById('issuerInfoMaturity').textContent = new Date(mat*1000).toLocaleString('fr-FR');
+    document.getElementById('issuerInfoMaxSupply').textContent = Number(maxSupply).toString();
+    document.getElementById('issuerInfoSubscribed').textContent = Number(totalSub) + ' / ' + Number(maxSupply);
+
+    // Clear old countdowns before starting new ones
+    if (issuerCountdownInterval) { clearInterval(issuerCountdownInterval); issuerCountdownInterval = null; }
+    if (subEndCountdownInterval) { clearInterval(subEndCountdownInterval); subEndCountdownInterval = null; }
+
     issuerCountdownInterval = setInterval(() => {
       const rem = mat - Math.floor(Date.now()/1000);
       const el = document.getElementById('issuerInfoCountdown');
@@ -2088,6 +2101,13 @@ async function confirmSubscribe() {
 async function unsubscribeFromProduct() {
   if (!investorSigner || !investorContract) return;
   try {
+    // Check state first — unsubscribe only allowed in SUBSCRIPTION state
+    const state = Number(await investorContract.currentState());
+    if (state !== STATE_SUBSCRIPTION) {
+      showNotification('Cannot unsubscribe — tokens already issued or contract closed', 'error');
+      investorLog('error', 'Unsubscribe not allowed in state: ' + stateLabel(state));
+      return;
+    }
     investorLog('info', 'Unsubscribing...');
     const tx = await investorContract.connect(investorSigner).unsubscribe({ gasLimit: 150000 });
     await tx.wait();
