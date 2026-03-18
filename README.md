@@ -18,7 +18,7 @@ SSCN is a tokenized structured product — a **Reverse Convertible Note** on ETH
 At maturity, the investor receives:
 
 - **If ETH/USD ≥ Barrier at maturity (no breach):** full capital ($1,000/token) + coupon (10%)  → **+$100 (+10%)**
-- **If ETH/USD < Barrier at maturity (breach):** capital is reduced proportionally to ETH performance + coupon is still paid  → **loss up to −40% or more depending on ETH drop**
+- **If ETH/USD < Barrier at maturity (breach):** capital is reduced proportionally to ETH performance + coupon is still paid  → **loss up to −40% or more depending on ETH drop and if the barrier is 60%**
 
 The coupon (put premium) is pre-funded by the issuer before token issuance, guaranteeing the investor always receives the coupon regardless of the barrier outcome.
 
