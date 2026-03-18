@@ -2034,13 +2034,13 @@ async function confirmSubscribe() {
     const depositAmt = BigInt(n) * 1000000000n; // n * $1,000 in USDC (6 decimals)
     const usdc = new ethers.Contract(MOCKUSDC_ADDR, ERC20_ABI, investorSigner);
     investorLog('info', 'Approving $' + (n*1000).toLocaleString() + ' USDC...');
-    const approveTx = await usdc.approve(contractAddr, depositAmt);
+    const approveTx = await usdc.approve(contractAddr, depositAmt, { gasLimit: 100000 });
     await approveTx.wait();
     investorLog('success', 'Approved ✓');
     btn.textContent = '⟳ Subscribing...';
     const contract = new ethers.Contract(contractAddr, SSCN_ABI, investorSigner);
     investorLog('info', 'Subscribing for ' + n + ' token(s)...');
-    const tx = await contract.subscribeAndDeposit(BigInt(n));
+    const tx = await contract.subscribeAndDeposit(BigInt(n), { gasLimit: 300000 });
     investorLog('info', 'Tx: ' + tx.hash);
     await tx.wait();
     investorLog('success', 'Subscribed ✓ — ' + n + ' token(s) · $' + (n*1000).toLocaleString() + ' USDC deposited');
@@ -2065,7 +2065,7 @@ async function unsubscribeFromProduct() {
   if (!investorSigner || !investorContract) return;
   try {
     investorLog('info', 'Unsubscribing...');
-    const tx = await investorContract.connect(investorSigner).unsubscribe();
+    const tx = await investorContract.connect(investorSigner).unsubscribe({ gasLimit: 150000 });
     await tx.wait();
     investorLog('success', 'Unsubscribed ✓ — USDC refunded');
     document.getElementById('subscribedBanner').style.display = 'none';
@@ -2079,7 +2079,7 @@ async function redeem() {
   if (!investorSigner || !investorContract) { showNotification('Connect investor wallet first', 'error'); return; }
   try {
     investorLog('info', 'Calling redeem()...');
-    const tx = await investorContract.connect(investorSigner).redeem();
+    const tx = await investorContract.connect(investorSigner).redeem({ gasLimit: 150000 });
     investorLog('info', 'Tx: ' + tx.hash);
     const receipt = await tx.wait();
     investorLog('success', 'Redeemed ✓ Block: ' + receipt.blockNumber);
