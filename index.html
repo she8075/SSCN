@@ -1563,7 +1563,9 @@ async function closeSubscription() {
     await tx.wait();
     interactLog('success', 'Subscription closed ✓ — state: ACTIVE');
     showNotification('Subscription period closed', 'success');
-    await loadIssuerContract(document.getElementById('issuerContractAddress').value);
+    const addr = document.getElementById('issuerContractAddress').value;
+    if (addr) await loadIssuerContract(addr);
+    else await refreshIssuerState();
   } catch(e) { interactLog('error', e.message); }
 }
 
@@ -1598,7 +1600,8 @@ async function issueAll() {
     await tx.wait();
     interactLog('success', 'All tokens issued ✓');
     showNotification('All tokens issued!', 'success');
-    await refreshIssuerState();
+    const addrI = document.getElementById('issuerContractAddress').value;
+    if (addrI) await loadIssuerContract(addrI); else await refreshIssuerState();
   } catch(e) { interactLog('error', e.message); }
 }
 
@@ -1878,6 +1881,20 @@ async function refreshInvestorBalances() {
     if (subBal) subBal.textContent = usdcFormatted;
     const sscnBal = await investorContract.balanceOf(investorAddress);
     document.getElementById('invInfoBalance').textContent = sscnBal.toString() + ' SSCN token(s)';
+    // Enable/disable Redeem based on balance and state
+    const btnRedeem = document.getElementById('btnRedeem');
+    if (btnRedeem) {
+      const stateNum2 = Number(await investorContract.currentState());
+      if (Number(sscnBal) > 0 && stateNum2 === STATE_SETTLED) {
+        btnRedeem.disabled = false;
+        btnRedeem.style.opacity = '1';
+        btnRedeem.title = '';
+      } else {
+        btnRedeem.disabled = true;
+        btnRedeem.style.opacity = '0.4';
+        btnRedeem.title = Number(sscnBal) === 0 ? 'No tokens to redeem' : 'Contract not yet settled';
+      }
+    }
     // Update sub amount display
     updateSubAmount();
   } catch(e) {}
