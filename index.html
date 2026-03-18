@@ -565,7 +565,7 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
         <div class="info-item"><div class="info-item-label">Subscriptions</div><div class="info-item-value accent" id="s3SubCount">0 / —</div></div>
         <div class="info-item"><div class="info-item-label">USDC Locked</div><div class="info-item-value" id="s3UsdcLocked">$0</div></div>
         <div class="info-item"><div class="info-item-label">Coupon Required</div><div class="info-item-value orange" id="s3CouponReq">—</div></div>
-        <div class="info-item"><div class="info-item-label">Sub Period</div><div class="countdown" id="s3SubCountdown">—</div></div>
+        <div class="info-item"><div class="info-item-label">Subscription End</div><div class="info-item-value" id="s3SubCountdown" style="font-family:var(--mono);font-size:12px">—</div></div>
       </div>
       <div class="subscriber-list" id="subscriberList" style="margin-bottom:16px"></div>
       <div id="subscriptionStatus" style="font-family:var(--mono);font-size:11px;margin-top:8px;min-height:14px;color:var(--text-muted)">⏳ Waiting for subscriptions...</div>
@@ -588,9 +588,9 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
           <div style="color:var(--text-muted);font-size:10px;margin-top:4px">= 10% × subscribed supply × $1,000</div>
         </div>
         <div class="actions-row">
-          <button class="btn btn-issuer" onclick="approveCoupon()">Approve USDC</button>
-          <button class="btn btn-issuer" onclick="depositCoupon()">Deposit Coupon</button>
-          <button class="btn btn-secondary" onclick="closeSubscription()">Close Subscription Period</button>
+          <button class="btn btn-issuer" id="btnApproveCoupon" onclick="approveCoupon()">Approve USDC</button>
+          <button class="btn btn-issuer" id="btnDepositCoupon" onclick="depositCoupon()">Deposit Coupon</button>
+          <button class="btn btn-secondary" id="btnCloseSubscription" onclick="closeSubscription()">Close Subscription Period</button>
         </div>
       </div>
     </div>
@@ -1475,7 +1475,10 @@ async function refreshIssuerState() {
     // Step 4 done check
     if (couponDep) {
       document.getElementById('stepPanel4Done').style.display = 'block';
-      document.getElementById('stepPanel4Form').style.display = 'none';
+      // Keep the form visible but hide approve/deposit buttons — keep Close Subscription
+      document.getElementById('stepPanel4Form').style.display = 'block';
+      document.getElementById('btnApproveCoupon').style.display = 'none';
+      document.getElementById('btnDepositCoupon').style.display = 'none';
       try {
         const couponReq = await issuerContract.getCouponRequired();
         document.getElementById('stepPanel4Detail').textContent = '$' + (Number(couponReq)/1e6).toFixed(2) + ' USDC deposited as coupon guarantee';
@@ -1483,18 +1486,21 @@ async function refreshIssuerState() {
     } else {
       document.getElementById('stepPanel4Done').style.display = 'none';
       document.getElementById('stepPanel4Form').style.display = 'block';
+      document.getElementById('btnApproveCoupon').style.display = 'inline-block';
+      document.getElementById('btnDepositCoupon').style.display = 'inline-block';
       try {
         const couponReq = await issuerContract.getCouponRequired();
         document.getElementById('couponToDeposit').textContent = '$' + (Number(couponReq)/1e6).toFixed(2) + ' USDC';
       } catch(e) {}
     }
 
-    // Subscription sub-period end countdown for step 3
+    // Subscription end time for step 3
     try {
-      const rem = Number(subEnd) - Math.floor(Date.now()/1000);
       const el = document.getElementById('s3SubCountdown');
-      if (rem <= 0) { el.textContent = 'ENDED'; el.className = 'countdown ended'; }
-      else { const h=Math.floor(rem/3600),m=Math.floor((rem%3600)/60),s=rem%60; el.textContent = h+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s'; }
+      const subEndTs = Number(subEnd);
+      const rem = subEndTs - Math.floor(Date.now()/1000);
+      if (rem <= 0) { el.textContent = 'ENDED'; el.style.color = 'var(--danger)'; }
+      else { el.textContent = new Date(subEndTs*1000).toLocaleTimeString('fr-FR'); el.style.color = 'var(--text)'; }
     } catch(e) {}
 
   } catch(e) { interactLog('error', 'Refresh failed: ' + e.message); }
@@ -1628,6 +1634,8 @@ async function settle() {
     await loadIssuerContract(document.getElementById('issuerContractAddress').value);
     // Show settlement result
     await showIssuerSettlementResult();
+    // Signal investor side to refresh redeem button
+    try { localStorage.setItem('sscn_settled_event', document.getElementById('issuerContractAddress').value); } catch(e) {}
   } catch(e) {
     interactLog('error', e.message);
     if (e.message.includes('not yet')) interactLog('info', 'Maturity not reached yet');
@@ -2357,6 +2365,18 @@ document.addEventListener('DOMContentLoaded', () => {
   if (tsModal) tsModal.addEventListener('click', function(e) { if (e.target === this) declineTermSheet(); });
   // Clear stale redeem events from previous sessions
   try { localStorage.removeItem('sscn_redeem_event'); } catch(e) {}
+  // Poll for settle event from issuer tab
+  setInterval(async () => {
+    try {
+      const settledAddr = localStorage.getItem('sscn_settled_event');
+      if (!settledAddr) return;
+      const invAddr = document.getElementById('investorContractAddress')?.value?.trim();
+      if (!invAddr || settledAddr !== invAddr) return;
+      localStorage.removeItem('sscn_settled_event');
+      // Refresh investor balances to enable redeem
+      if (investorContract && investorAddress) await refreshInvestorBalances();
+    } catch(e) {}
+  }, 2000);
 });
 
 // ─── REDEEM EVENT POLLING (issuer alert) ─────────────────────────────────────
