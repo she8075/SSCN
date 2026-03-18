@@ -565,7 +565,7 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
         <div class="info-item"><div class="info-item-label">Subscriptions</div><div class="info-item-value accent" id="s3SubCount">0 / —</div></div>
         <div class="info-item"><div class="info-item-label">USDC Locked</div><div class="info-item-value" id="s3UsdcLocked">$0</div></div>
         <div class="info-item"><div class="info-item-label">Coupon Required</div><div class="info-item-value orange" id="s3CouponReq">—</div></div>
-        <div class="info-item"><div class="info-item-label">Subscription End</div><div class="info-item-value" id="s3SubCountdown" style="font-family:var(--mono);font-size:12px">—</div></div>
+
       </div>
       <div class="subscriber-list" id="subscriberList" style="margin-bottom:16px"></div>
       <div id="subscriptionStatus" style="font-family:var(--mono);font-size:11px;margin-top:8px;min-height:14px;color:var(--text-muted)">⏳ Waiting for subscriptions...</div>
@@ -1377,14 +1377,19 @@ async function loadIssuerContract(addr) {
       else { const h=Math.floor(rem/3600),m=Math.floor((rem%3600)/60),s=rem%60; el.textContent = h+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s'; el.className = 'countdown'; }
     }, 1000);
 
-    // Sub end countdown
-    if (subEndCountdownInterval) clearInterval(subEndCountdownInterval);
-    subEndCountdownInterval = setInterval(() => {
-      const rem = subEnd - Math.floor(Date.now()/1000);
-      const el = document.getElementById('issuerInfoSubEnd');
-      if (rem <= 0) { el.textContent = 'ENDED'; el.className = 'countdown ended'; clearInterval(subEndCountdownInterval); }
-      else { const h=Math.floor(rem/3600),m=Math.floor((rem%3600)/60),s=rem%60; el.textContent = h+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s'; el.className = 'countdown'; }
-    }, 1000);
+    // Sub end — show fixed time, not countdown
+    if (subEndCountdownInterval) { clearInterval(subEndCountdownInterval); subEndCountdownInterval = null; }
+    const subEndEl = document.getElementById('issuerInfoSubEnd');
+    if (stateNum !== STATE_SUBSCRIPTION) {
+      subEndEl.textContent = 'CLOSED'; subEndEl.className = 'countdown ended';
+    } else {
+      const remSub = subEnd - Math.floor(Date.now()/1000);
+      if (remSub <= 0) { subEndEl.textContent = 'ENDED'; subEndEl.className = 'countdown ended'; }
+      else {
+        subEndEl.textContent = new Date(subEnd*1000).toLocaleTimeString('fr-FR');
+        subEndEl.className = 'countdown';
+      }
+    }
 
     document.getElementById('issuerContractInfo').classList.add('visible');
     interactLog('info', 'Contract loaded: ' + addr);
@@ -1416,6 +1421,21 @@ async function refreshIssuerState() {
     const sub = Number(totalSub), max = Number(maxSupply);
 
     document.getElementById('issuerInfoSubscribed').textContent = sub + ' / ' + max;
+    document.getElementById('issuerInfoState').textContent = stateLabel(stateNum);
+
+    // Update subscription end display based on current state
+    const subEndEl = document.getElementById('issuerInfoSubEnd');
+    if (subEndEl) {
+      const subEndTs = Number(subEnd);
+      if (stateNum !== STATE_SUBSCRIPTION) {
+        subEndEl.textContent = 'CLOSED'; subEndEl.className = 'countdown ended';
+        if (subEndCountdownInterval) { clearInterval(subEndCountdownInterval); subEndCountdownInterval = null; }
+      } else {
+        const remSub = subEndTs - Math.floor(Date.now()/1000);
+        if (remSub <= 0) { subEndEl.textContent = 'ENDED'; subEndEl.className = 'countdown ended'; }
+        else { subEndEl.textContent = new Date(subEndTs*1000).toLocaleTimeString('fr-FR'); subEndEl.className = 'countdown'; }
+      }
+    }
 
     // Update stepper
     let activeStep = 1;
@@ -1494,14 +1514,7 @@ async function refreshIssuerState() {
       } catch(e) {}
     }
 
-    // Subscription end time for step 3
-    try {
-      const el = document.getElementById('s3SubCountdown');
-      const subEndTs = Number(subEnd);
-      const rem = subEndTs - Math.floor(Date.now()/1000);
-      if (rem <= 0) { el.textContent = 'ENDED'; el.style.color = 'var(--danger)'; }
-      else { el.textContent = new Date(subEndTs*1000).toLocaleTimeString('fr-FR'); el.style.color = 'var(--text)'; }
-    } catch(e) {}
+
 
   } catch(e) { interactLog('error', 'Refresh failed: ' + e.message); }
 }
@@ -1742,34 +1755,38 @@ function publishAndGenerateQR() {
 
 function startSubscriptionPolling(contractAddr) {
   if (subscriptionPollInterval) clearInterval(subscriptionPollInterval);
-  let lastKnownCount = 0;
-  let notified = false;
+  let lastKnownCount = -1; // -1 means not yet initialized
   subscriptionPollInterval = setInterval(async () => {
     try {
       const prov = provider || new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
       const contract = new ethers.Contract(contractAddr, SSCN_ABI, prov);
-      const totalSub = Number(await contract.totalSubscribed());
-      const state = Number(await contract.currentState());
+      const [totalSubBN, stateBN] = await Promise.all([contract.totalSubscribed(), contract.currentState()]);
+      const totalSub = Number(totalSubBN);
+      const state = Number(stateBN);
 
-      // Stop polling if state moved beyond SUBSCRIPTION
-      if (state > 0) {
+      // Stop polling immediately if state moved beyond SUBSCRIPTION
+      if (state > STATE_SUBSCRIPTION) {
         clearInterval(subscriptionPollInterval);
         subscriptionPollInterval = null;
         return;
       }
 
+      // Initialize on first poll — no notification
+      if (lastKnownCount === -1) { lastKnownCount = totalSub; return; }
+
       // New subscription detected
       if (totalSub > lastKnownCount) {
+        const delta = totalSub - lastKnownCount;
         lastKnownCount = totalSub;
         await refreshIssuerState();
-        if (!notified) {
-          notified = true;
+        await refreshSubscriberList();
+        if (totalSub === 1) {
           const notif = document.getElementById('notification');
-          notif.textContent = '🎉 First subscription received! Deposit coupon to proceed.';
+          notif.textContent = '🎉 1 investor subscribed! Deposit coupon to proceed.';
           notif.className = 'notification success show';
-          setTimeout(() => notif.classList.remove('show'), 8000);
+          setTimeout(() => notif.classList.remove('show'), 6000);
         } else {
-          showNotification('New subscription: ' + totalSub + ' total', 'success');
+          showNotification(totalSub + ' subscriptions received', 'success');
         }
       }
     } catch(e) {}
