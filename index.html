@@ -502,17 +502,6 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
   </div>
 
   <div id="issuerContractInfo" class="contract-info">
-    <!-- STATUS GRID -->
-    <div class="info-grid" style="margin-bottom:24px">
-      <div class="info-item"><div class="info-item-label">State</div><div class="info-item-value" id="issuerInfoState">—</div></div>
-      <div class="info-item"><div class="info-item-label">S₀</div><div class="info-item-value" id="issuerInfoS0">—</div></div>
-      <div class="info-item"><div class="info-item-label">Barrier</div><div class="info-item-value orange" id="issuerInfoBarrier">—</div></div>
-      <div class="info-item"><div class="info-item-label">Maturity</div><div class="info-item-value" id="issuerInfoMaturity">—</div></div>
-      <div class="info-item"><div class="info-item-label">Until Maturity</div><div class="countdown" id="issuerInfoCountdown">—</div></div>
-      <div class="info-item"><div class="info-item-label">Subscription End</div><div class="countdown" id="issuerInfoSubEnd">—</div></div>
-      <div class="info-item"><div class="info-item-label">Max Supply</div><div class="info-item-value" id="issuerInfoMaxSupply">—</div></div>
-      <div class="info-item"><div class="info-item-label">Total Subscribed</div><div class="info-item-value accent" id="issuerInfoSubscribed">—</div></div>
-    </div>
 
     <!-- STEP 2 — PUBLISH QR -->
     <div class="step-panel" id="stepPanel2">
@@ -580,7 +569,10 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
         <div class="info-item"><div class="info-item-label">Sub Period</div><div class="countdown" id="s3SubCountdown">—</div></div>
       </div>
       <div class="subscriber-list" id="subscriberList" style="margin-bottom:16px"></div>
-      <div id="subscriptionStatus" style="font-family:var(--mono);font-size:11px;margin-top:8px;min-height:14px;color:var(--text-muted)">⏳ Waiting for subscriptions...</div>
+      <div style="display:flex;align-items:center;gap:16px;margin-top:8px">
+        <div id="subscriptionStatus" style="font-family:var(--mono);font-size:11px;min-height:14px;color:var(--text-muted);flex:1">⏳ Waiting for subscriptions...</div>
+        <button class="btn btn-secondary" onclick="closeSubscription()" style="font-size:10px;padding:6px 14px;white-space:nowrap">✕ Close Subscription Early</button>
+      </div>
     </div>
 
     <!-- STEP 4 — DEPOSIT COUPON -->
@@ -659,6 +651,18 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- STATUS GRID — shown after step panels -->
+    <div class="info-grid" style="margin-bottom:16px;margin-top:8px">
+      <div class="info-item"><div class="info-item-label">State</div><div class="info-item-value" id="issuerInfoState">—</div></div>
+      <div class="info-item"><div class="info-item-label">S₀</div><div class="info-item-value" id="issuerInfoS0">—</div></div>
+      <div class="info-item"><div class="info-item-label">Barrier</div><div class="info-item-value orange" id="issuerInfoBarrier">—</div></div>
+      <div class="info-item"><div class="info-item-label">Maturity</div><div class="info-item-value" id="issuerInfoMaturity">—</div></div>
+      <div class="info-item"><div class="info-item-label">Until Maturity</div><div class="countdown" id="issuerInfoCountdown">—</div></div>
+      <div class="info-item"><div class="info-item-label">Subscription End</div><div class="countdown" id="issuerInfoSubEnd">—</div></div>
+      <div class="info-item"><div class="info-item-label">Max Supply</div><div class="info-item-value" id="issuerInfoMaxSupply">—</div></div>
+      <div class="info-item"><div class="info-item-label">Total Subscribed</div><div class="info-item-value accent" id="issuerInfoSubscribed">—</div></div>
     </div>
 
     <div class="tx-log" id="interactLog"><div class="log-line">// Contract loaded — ready to interact</div></div>
