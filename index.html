@@ -1292,7 +1292,8 @@ function renderDeployedList() {
     if (!list || contracts.length === 0) return;
     const newCards = contracts.map(c => `<div class="contract-card" onclick="loadIssuerContract('${c.addr}')">
       <div><div class="contract-addr">${c.addr.slice(0,10)}...${c.addr.slice(-5)}</div>
-      <div class="contract-meta">Barrier ${c.barrierPct} · Max ${c.maxSupply} tokens · ${new Date(c.deployedAt).toLocaleDateString()}</div></div>`).join('');
+      <div class="contract-meta">Barrier ${c.barrierPct} · Max ${c.maxSupply} tokens · ${new Date(c.deployedAt).toLocaleDateString()}</div></div>
+    </div>`).join('');
     list.innerHTML = newCards + list.innerHTML;
   } catch(e) {}
 }
@@ -2354,7 +2355,26 @@ window.addEventListener('load', async () => {
 document.addEventListener('DOMContentLoaded', () => {
   const tsModal = document.getElementById('termSheetModal');
   if (tsModal) tsModal.addEventListener('click', function(e) { if (e.target === this) declineTermSheet(); });
+  // Clear stale redeem events from previous sessions
+  try { localStorage.removeItem('sscn_redeem_event'); } catch(e) {}
 });
+
+// ─── REDEEM EVENT POLLING (issuer alert) ─────────────────────────────────────
+setInterval(() => {
+  try {
+    if (!issuerAddress) return; // only alert if issuer is connected
+    const ev = localStorage.getItem('sscn_redeem_event');
+    if (!ev) return;
+    const { addr, investor, time } = JSON.parse(ev);
+    if (Date.now() - time > 30000) { localStorage.removeItem('sscn_redeem_event'); return; }
+    const issuerAddr = document.getElementById('issuerContractAddress')?.value?.trim();
+    if (issuerAddr && addr === issuerAddr) {
+      localStorage.removeItem('sscn_redeem_event');
+      showNotification('🎉 Investor ' + investor.slice(0,8) + '... has redeemed their tokens!', 'success');
+      interactLog('success', '🎉 Investor ' + investor + ' redeemed — payoff sent');
+    }
+  } catch(e) {}
+}, 3000);
 
 </script>
 </body>
