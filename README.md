@@ -1,163 +1,209 @@
 # SSCN — Structured Security Crypto Note
 
-> A fully on-chain tokenized structured product — Reverse Convertible on ETH/USD  
-> ERC-3643 (T-REX) · Chainlink Oracle · Sepolia Testnet
+**A fully on-chain tokenized Reverse Convertible Note on ETH/USD**  
+ERC-3643 (T-REX) · Sepolia Testnet · Chainlink Oracle · OnchainID
 
-**🌐 Live dApp → [she8075.github.io/SSCN](https://she8075.github.io/SSCN)**
+> Academic project — Master Finance, Technology & Data  
+> Paris 1 Panthéon-Sorbonne · 2026  
+> BOUZIANI Shéhérazade · SYLLA Mourad
 
 ---
 
 ## What is SSCN?
 
-SSCN is a tokenized Reverse Convertible structured product built on Ethereum. It offers investors a **guaranteed 10% annual coupon** with capital exposure to ETH/USD via a European barrier option mechanism.
+SSCN is a tokenized structured product — a **Reverse Convertible Note** on ETH/USD — deployed on the Ethereum Sepolia testnet. It replicates the payoff structure of a real capital markets instrument using smart contracts, a live Chainlink price oracle, and a compliant identity framework based on ERC-3643 (T-REX).
 
-| Parameter | Value |
-|-----------|-------|
-| Underlying | ETH/USD (Chainlink oracle) |
-| Barrier type | European — observed **once** at maturity |
-| Barrier level | 60% × S₀ |
-| Coupon | 10% / year — **always guaranteed** |
-| Nominal | $1,000 per token |
-| Settlement | MockUSDC (Sepolia testnet) |
-| Standard | ERC-3643 (T-REX) |
+### Payoff structure
+
+At maturity, the investor receives:
+
+- **If ETH/USD ≥ Barrier at maturity (no breach):** full capital ($1,000/token) + coupon (10%)  → **+$100 (+10%)**
+- **If ETH/USD < Barrier at maturity (breach):** capital is reduced proportionally to ETH performance + coupon is still paid  → **loss up to −40% or more depending on ETH drop**
+
+The coupon (put premium) is pre-funded by the issuer before token issuance, guaranteeing the investor always receives the coupon regardless of the barrier outcome.
 
 ---
 
-## Payoff Structure
+## Live demo
 
-```
-If S(T) ≥ 60% × S₀  →  $1,000 capital + $100 coupon  =  $1,100
-If S(T) <  60% × S₀  →  $1,000 × S(T)/S₀ + $100 coupon
-```
+**dApp:** [she8075.github.io/SSCN](https://she8075.github.io/SSCN/)
 
-The coupon is **always paid**, regardless of barrier breach. Only the capital is at risk.
+| Role | Description |
+|------|-------------|
+| **Issuer** | Deploy contract, monitor subscriptions, deposit coupon, issue tokens, settle at maturity |
+| **Investor** | Review term sheet, subscribe with USDC, track investment, redeem payoff |
 
 ---
 
 ## Architecture
 
-```
-SSCNToken_RC.sol          — Main ERC-3643 Reverse Convertible contract
-MockUSDC.sol              — Test USDC (6 decimals)
-MockKYC.sol               — KYC identity registry (IIdentityRegistry interface)
-SSCN_ONCHAINID_Integration.sol  — ONCHAINID compliance architecture
-SSCN_Backtesting.py       — Historical backtesting (Binance API, 825 windows)
-SSCNToken_RC_t.sol        — Foundry test suite (62/62 PASS)
-index.html                — Interactive dApp (this site)
-```
+### Smart contracts (Sepolia)
 
----
+| Contract | Address | Role |
+|----------|---------|------|
+| `SSCNToken_RC_v4.sol` | `0x872fB88bE0b7fCa437D43143D465F44A62c5c9e4` | Reference SSCN contract (MockKYC) |
+| `SSCNToken_RC_v4.sol` | `0x735188235B28E7A28ae37A9B65F99cd5D7d4D0FA` | SSCN with real OnchainID registry |
+| `ClaimIssuer.sol` | `0xF5688F0d72eFa3542fb272724B1F10889A176761` | KYC claim issuer (ERC-735) |
+| `Identity.sol` | `0xE651deA46a36311bbf4ede90CA6b4069D8d26216` | Investor identity contract (ERC-734) |
+| `IdentityRegistry.sol` | `0xC6Dc128CfA93bdE19aFd8860770a8C8eA68875B6` | T-REX identity registry |
+| `MockKYC` | `0x1DDd83f21D764369807a789CFFe60a651E011aF4` | Simplified KYC stub (demo only) |
+| `MockUSDC` | `0x19D76090915c4f97fF2075C3AC0822AbE1898E91` | ERC-20 test stablecoin |
+| Chainlink ETH/USD | `0x694AA1769357215DE4FAC081bf1f309aDC325306` | Live price feed (Sepolia) |
 
-## Deployed Contracts — Sepolia Testnet
+### SSCNToken_RC_v4.sol — key functions
 
-| Contract | Address | Description |
-|----------|---------|-------------|
-| MockKYC | `0x1DDd83f21D764369807a789CFFe60a651E011aF4` | KYC registry |
-| MockUSDC | `0x19D76090915c4f97fF2075C3AC0822AbE1898E91` | Test USDC |
-| SSCNToken_RC (Sc.1 — No breach) | `0xA02B28c45f814B7FF6c663cF1db5aFBa86edb571` | barrierPct=6000, settled ✅ |
-| SSCNToken_RC (Sc.2 — Breach test) | `0xe7ffc97766e6b198938e50857902d5012069C5dC` | barrierPct=9900, settled ✅ |
-| MockONCHAINID | `0x42fB8dc936dd5958514CE78Fe6D853aa9eC00855` | ONCHAINID mock |
-| SSCNComplianceChecker | `0xF2CD3636caC2784B629d97A668c3871C3d906a8a` | Compliance layer |
-| SSCNIdentityRegistryAdapter | `0x8E75e887A32A24614C5d1619c3144684a0269958` | Identity adapter |
+| Function | Role | Caller |
+|----------|------|--------|
+| `subscribeAndDeposit(uint256)` | Investor subscribes and locks USDC atomically | Investor |
+| `unsubscribe()` | Investor exits during subscription period | Investor |
+| `depositCoupon()` | Issuer pre-funds the coupon | Issuer |
+| `closeSubscription()` | Closes the subscription window | Issuer |
+| `issueAll()` | KYC-checks all subscribers and mints tokens | Issuer |
+| `settleAtMaturity()` | Reads Chainlink price, computes payoff, transitions to SETTLED | Issuer |
+| `redeem()` | Investor receives capital + coupon | Investor |
 
----
-
-## Backtesting Results
-
-Historical analysis on **825 rolling 1-year windows** of ETH/USD (Binance, 2022–2025):
-
-| Metric | Value |
-|--------|-------|
-| P(barrier breach at maturity) | **11.8%** |
-| Expected payoff | **$1,044** |
-| Median payoff | **$1,100** |
-| VaR 95% | **$627** |
-| CVaR 95% | **$565** |
-| Avg realized volatility | **~53%** |
-
-### Stress Event Analysis
-
-| Event | Max drawdown | Barrier breached | Worst-case payoff |
-|-------|-------------|-----------------|-------------------|
-| LUNA/UST crash (Apr–May 2022) | −71.7% | Yes (American) / No (European) | $383 |
-| FTX collapse (Nov 2022) | −44.4% | No (European — recovered at maturity) | $1,100 |
-
-> The European barrier is central to the SSCN design: despite a −44.4% intraday drawdown during the FTX crisis, ETH recovered fully by maturity → $1,100 payoff.
-
----
-
-## Test Suite — Foundry
+### Contract lifecycle
 
 ```
-62/62 tests PASS
-├── Unit tests: deposit, issue, settle, redeem
-├── Scenario 1: no breach → $1,100 payoff
-├── Scenario 2: breach → reduced capital + guaranteed coupon
-├── KYC enforcement: revert on unverified investor
-├── State machine: ACTIVE → SETTLED
-└── Fuzz tests (4): arbitrary prices, barrier percentages
+SUBSCRIPTION → ACTIVE → SETTLED
 ```
 
----
-
-## How to Use the dApp
-
-### Desktop
-1. Install [MetaMask](https://metamask.io)
-2. Switch to **Sepolia testnet**
-3. Go to [she8075.github.io/SSCN](https://she8075.github.io/SSCN)
-4. Click **Connect Wallet**
-
-### Mobile
-1. Open the **MetaMask app**
-2. Tap **Explorer** (bottom tab)
-3. Navigate to `she8075.github.io/SSCN`
-4. Click **Connect Wallet**
-
-### Get Sepolia ETH (for gas)
-→ [sepoliafaucet.com](https://sepoliafaucet.com) or [faucet.sepolia.dev](https://faucet.sepolia.dev)
+**SUBSCRIPTION:** investors can subscribe and deposit USDC. Issuer deposits coupon.  
+**ACTIVE:** subscription closed, tokens issued to KYC-verified investors.  
+**SETTLED:** `settleAtMaturity()` called after maturity, payoff computed from Chainlink ETH/USD.
 
 ---
 
-## Deploy Your Own Contract
+## ERC-3643 (T-REX) compliance
 
-From the dApp → **Deploy** section, choose your parameters:
+SSCN implements the core identity verification architecture of the ERC-3643 standard, which governs compliant security token transfers.
 
-| Parameter | Description | Example |
-|-----------|-------------|---------|
-| `barrierPct` | Barrier as % × 100 | `6000` = 60% |
-| `couponBps` | Annual coupon in basis points | `1000` = 10% |
-| `maturityDelay` | Time to maturity in seconds | `604800` = 7 days |
+### What was implemented
 
-Presets available: 5min test · 15min test · 1h test · 7d · 1 year
+**ClaimIssuer** (`0xF568...761`) — the issuer wallet acts as the KYC agent. It can issue and revoke claims about investor identities. Implements `isClaimValid()` using ECDSA signature verification.
 
----
+**Identity contract** (`0xE651...216`) — each investor has their own on-chain identity smart contract compliant with ERC-734/735. It stores claims issued by authorized claim issuers.
 
-## ONCHAINID Integration
+**IdentityRegistry** (`0xC6Dc...B6`) — the central registry linking investor wallet addresses to their Identity contracts. The SSCN contract calls `isVerified(investor)` on this registry before allowing subscription or token issuance.
 
-The SSCN compliance architecture follows the ERC-3643 / T-REX standard:
+With this setup, **investors registered in the IdentityRegistry can subscribe to any new SSCN contract without any manual KYC action from the issuer** — verification is enforced automatically on-chain.
 
-- **MockONCHAINID** deployed on Sepolia (replaces full Tokeny T-REX stack for POC)
-- **SSCNComplianceChecker** — on-chain KYC verification
-- **SSCNIdentityRegistryAdapter** — zero-redeployment migration path documented
-- 8 transactions validated on-chain (blocks 10410823–10410901)
+### Architectural scope
 
-Production migration path to real ONCHAINID (Tokeny, Sum&Substance) documented in Stage 3 report.
+The following components of the full Tokeny T-REX implementation were intentionally excluded as they do not add demonstrable value in an academic testnet context:
 
----
+- `ClaimTopicsRegistry` — centralizes required claim types per token
+- `TrustedIssuersRegistry` — whitelist of authorized claim issuers per topic
+- `Compliance` module — encodes transfer restrictions (jurisdiction caps, max holders, lockup)
+- `IdFactory` with beacon proxy — deterministic cross-chain Identity deployment via CREATE2
 
-## Authors
-
-**BOUZIANI Shéhérazade** — Finance & Structuring  
-**SYLLA Mourad** — Blockchain & Smart Contracts  
-
-MSc Finance, Technology & Data — Paris 1 Panthéon-Sorbonne · March 2026
+The identity contracts were written from scratch without copying the Tokeny open-source codebase.
 
 ---
 
-## Links
+## dApp — frontend
 
-- 🌐 [Live dApp](https://she8075.github.io/SSCN)
-- 🔍 [Etherscan — MockKYC](https://sepolia.etherscan.io/address/0x1DDd83f21D764369807a789CFFe60a651E011aF4)
-- 🔍 [Etherscan — MockUSDC](https://sepolia.etherscan.io/address/0x19D76090915c4f97fF2075C3AC0822AbE1898E91)
-- 🔗 [Chainlink ETH/USD Sepolia](https://sepolia.etherscan.io/address/0x694AA1769357215DE4FAC081bf1f309aDC325306)
+**Files:**
+- `index.html` — main dApp (Issuer + Investor tabs)
+- `index_sandbox.html` — sandbox mode with MockPriceFeed for barrier breach simulation
+
+**Stack:** vanilla HTML/CSS/JS · ethers.js v6 · QRCode.js · Chart.js  
+No build step. Deployed as a static site via GitHub Pages.
+
+### Dual-wallet architecture
+
+The dApp manages two independent wallet connections simultaneously:
+- **Issuer wallet** (`0x53a8...`) — connected in the Issuer tab
+- **Investor wallet** (`0xDa4f...`) — connected in the Investor tab
+
+Both wallets can be connected at the same time in different browser tabs, simulating a real-world issuer/investor interaction.
+
+### Key UX features
+
+- **Live Chainlink price chart** — ETH/USD with barrier overlay (last 24h via Deribit API)
+- **Term sheet modal** — displays full product terms before subscription, checks USDC balance, offers testnet mint if insufficient
+- **QR code sharing** — issuer generates a QR code that deep-links the investor directly to the right contract
+- **Subscription monitoring** — real-time list of subscribers with subscription timestamp and USDC locked
+- **Settlement result panel** — displays S(T), barrier status, capital per token, coupon, total payoff, P&L
+- **Sandbox tab** — deploy a `MockPriceFeed` to control S₀ and S(T) manually, test both barrier scenarios
+
+---
+
+## How to run a demo
+
+### Standard flow (Chainlink oracle, MockKYC)
+
+1. Open [she8075.github.io/SSCN](https://she8075.github.io/SSCN/) — **Issuer tab**
+2. Connect issuer wallet (MetaMask, Sepolia)
+3. Section 02 — set parameters, leave Identity Registry blank (uses MockKYC)
+4. Click **Deploy Contract**
+5. Step 2 — click **Generate QR / Link** and share with investor
+6. Open a second browser or tab — **Investor tab** — connect investor wallet
+7. Load contract via QR or "From Issuer" button
+8. Step 2 (Investor) — click **Subscribe**, accept term sheet, mint test USDC if needed
+9. Step 3 (Issuer) — monitor subscriptions, verify investor KYC manually
+10. Step 4 — **Approve USDC → Deposit Coupon**
+11. Step 5 — **Issue All Tokens**, wait for maturity, **Settle at Maturity**
+12. Investor — **Redeem** (button activates automatically after settlement)
+
+### T-REX flow (real OnchainID, no manual KYC)
+
+Same as above but in step 3, paste the deployed IdentityRegistry address:
+```
+0xC6Dc128CfA93bdE19aFd8860770a8C8eA68875B6
+```
+The investor (`0xDa4fe98782629879f15DE43a922D9079410E6C50`) is permanently registered and can subscribe without any issuer KYC action.
+
+### Sandbox flow (manual price control)
+
+1. Open `index_sandbox.html`
+2. Section 00 — **Deploy MockPriceFeed** with S₀ of your choice
+3. Section 01 — **Deploy SSCN** using the MockPriceFeed address
+4. Run the full subscription flow
+5. Before settling — go back to Section 00, set S(T) to any value (e.g. $800 = −60% → barrier breached)
+6. **Settle at Maturity** — observe capital loss in settlement result
+
+---
+
+## On-chain financing protection
+
+The contract includes a protection against under-funded issuance. If the issuer attempts to issue more tokens than the deposited USDC can cover (coupon not fully funded), the transaction reverts with:
+
+```
+SSCN: insufficient funds to cover issuance
+```
+
+**Test validated:** contract `0xFEf1047Fc409069EcB340A6FcB5418C6c17e1F9F`, deposit of $1,100 (1 token), attempted issuance of 3 tokens → revert ✅
+
+---
+
+## Limitations and known constraints
+
+**MockUSDC:** the testnet uses a mintable ERC-20 stub. In production, investors would hold real USDC — the "Get test USDC" button does not exist in a real deployment.
+
+**Sepolia RPC reliability:** public Sepolia RPC nodes (`publicnode.com`) occasionally fail `eth_estimateGas` on complex contracts. All transactions use explicit `gasLimit` values to bypass estimation.
+
+**OnchainID scope:** the T-REX implementation covers the identity verification core (ClaimIssuer, Identity, IdentityRegistry) but not the full Tokeny suite (ClaimTopicsRegistry, TrustedIssuersRegistry, Compliance module, IdFactory beacon proxy).
+
+**Deployment restriction:** in the demo dApp, the Deploy button is accessible to any connected wallet. In production, deployment would be restricted to the authorized issuer via authentication middleware.
+
+**Barrier type:** European only (checked at maturity). American (daily barrier monitoring) is not implemented.
+
+**Single investor per address:** each wallet can subscribe once per contract. Multiple tokens per subscription are supported via the `amount` parameter.
+
+---
+
+## Project context
+
+This project was developed as **Stage 4** of a structured product tokenization curriculum as part of the Master Finance, Technology & Data program at Paris 1 Panthéon-Sorbonne.
+
+Previous stages:
+- **Stage 1–2:** product design and Black-Scholes pricing model
+- **Stage 3:** backtesting GBM model assumptions against real ETH/USDT historical data (Binance API, 2021–2026), including regime-conditional analysis and block bootstrap ESS estimation
+- **Stage 4:** smart contract development, ERC-3643 compliance layer, and full-stack dApp
+
+---
+
+## License
+
+Academic project — Paris 1 Panthéon-Sorbonne · 2026
