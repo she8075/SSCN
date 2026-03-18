@@ -473,8 +473,7 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
       <div class="card-title">Previously Deployed Contracts</div>
       <div class="contracts-list" id="deployedList">
         <div class="contract-card" onclick="loadIssuerContract('0x872fB88bE0b7fCa437D43143D465F44A62c5c9e4')">
-          <div><div class="contract-addr">0x872fB88b...c9e4</div><div class="contract-meta">v4 · Barrier 60% · Delay 3600s · 17/03/2026</div></div>
-          <div class="tag-green">v4</div>
+          <div><div class="contract-addr">0x872fB88b...c9e4</div><div class="contract-meta">Barrier 60% · Delay 3600s · 17/03/2026</div></div>
         </div>
       </div>
     </div>
@@ -569,10 +568,7 @@ footer { padding: 32px 40px; border-top: 1px solid var(--border); display: flex;
         <div class="info-item"><div class="info-item-label">Sub Period</div><div class="countdown" id="s3SubCountdown">—</div></div>
       </div>
       <div class="subscriber-list" id="subscriberList" style="margin-bottom:16px"></div>
-      <div style="display:flex;align-items:center;gap:16px;margin-top:8px">
-        <div id="subscriptionStatus" style="font-family:var(--mono);font-size:11px;min-height:14px;color:var(--text-muted);flex:1">⏳ Waiting for subscriptions...</div>
-        <button class="btn btn-secondary" onclick="closeSubscription()" style="font-size:10px;padding:6px 14px;white-space:nowrap">✕ Close Subscription Early</button>
-      </div>
+      <div id="subscriptionStatus" style="font-family:var(--mono);font-size:11px;margin-top:8px;min-height:14px;color:var(--text-muted)">⏳ Waiting for subscriptions...</div>
     </div>
 
     <!-- STEP 4 — DEPOSIT COUPON -->
@@ -1296,8 +1292,7 @@ function renderDeployedList() {
     if (!list || contracts.length === 0) return;
     const newCards = contracts.map(c => `<div class="contract-card" onclick="loadIssuerContract('${c.addr}')">
       <div><div class="contract-addr">${c.addr.slice(0,10)}...${c.addr.slice(-5)}</div>
-      <div class="contract-meta">v4 · Barrier ${c.barrierPct} · Max ${c.maxSupply} tokens · ${new Date(c.deployedAt).toLocaleDateString()}</div></div>
-      <div class="tag-green">v4</div></div>`).join('');
+      <div class="contract-meta">Barrier ${c.barrierPct} · Max ${c.maxSupply} tokens · ${new Date(c.deployedAt).toLocaleDateString()}</div></div>`).join('');
     list.innerHTML = newCards + list.innerHTML;
   } catch(e) {}
 }
@@ -1515,13 +1510,15 @@ async function refreshSubscriberList() {
       return;
     }
     for (let i = 0; i < Math.min(Number(count), 20); i++) {
-      const [addr, amount, deposited] = await issuerContract.getSubscriberAt(i);
+      const [addr, amount, deposited, subTimestamp] = await issuerContract.getSubscriberAt(i);
       if (Number(amount) === 0) continue; // unsubscribed
+      const subTime = Number(subTimestamp) > 0 ? new Date(Number(subTimestamp)*1000).toLocaleTimeString('fr-FR') : '—';
       const row = document.createElement('div');
       row.className = 'subscriber-row';
       row.innerHTML = `<span style="color:var(--accent3)">${addr.slice(0,8)}...${addr.slice(-6)}</span>
         <span>${amount} token(s)</span>
-        <span style="color:var(--accent)">${(Number(deposited)/1e6).toFixed(0)} USDC</span>`;
+        <span style="color:var(--accent)">${(Number(deposited)/1e6).toFixed(0)} USDC</span>
+        <span style="color:var(--text-muted);font-size:10px">subscribed at ${subTime}</span>`;
       list.appendChild(row);
     }
 
@@ -2128,6 +2125,11 @@ async function redeem() {
     const receipt = await tx.wait();
     investorLog('success', 'Redeemed ✓ Block: ' + receipt.blockNumber);
     showNotification('Payoff received! 🎉', 'success');
+    // Signal issuer via localStorage
+    try {
+      const contractAddr = document.getElementById('investorContractAddress').value.trim();
+      localStorage.setItem('sscn_redeem_event', JSON.stringify({ addr: contractAddr, investor: investorAddress, time: Date.now() }));
+    } catch(e) {}
     await refreshInvestorBalances();
   } catch(e) { investorLog('error', e.message); }
 }
