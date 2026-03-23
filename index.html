@@ -1841,30 +1841,18 @@ async function loadInvestorContract(addr) {
       subEndEl.textContent = 'Closed by issuer';
       subEndEl.className = 'countdown ended';
     } else {
-      invSubEndInterval = setInterval(async () => {
-        // Check on-chain state to catch early closure by issuer
-        try {
-          const currentStateOnChain = Number(await investorContract.currentState());
-          if (currentStateOnChain !== STATE_SUBSCRIPTION) {
-            subEndEl.textContent = 'Closed by issuer';
-            subEndEl.className = 'countdown ended';
-            clearInterval(invSubEndInterval);
-            invSubEndInterval = null;
-            return;
-          }
-        } catch(e) { /* ignore RPC errors, fall through to timer */ }
+      invSubEndInterval = setInterval(() => {
         const rem = subEnd - Math.floor(Date.now()/1000);
         if (rem <= 0) {
           subEndEl.textContent = 'ENDED';
           subEndEl.className = 'countdown ended';
           clearInterval(invSubEndInterval);
-          invSubEndInterval = null;
         } else {
           const h=Math.floor(rem/3600),m=Math.floor((rem%3600)/60),s=rem%60;
           subEndEl.textContent = h+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s';
           subEndEl.className = 'countdown';
         }
-      }, 3000);
+      }, 1000);
     }
 
     // Show subscribe form only if state = SUBSCRIPTION and sub period not ended
