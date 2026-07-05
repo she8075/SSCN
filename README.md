@@ -5,7 +5,7 @@ ERC-3643 (T-REX) · Sepolia Testnet · Chainlink Oracle · OnchainID
 
 > Academic project — Master Finance, Technology & Data  
 > Paris 1 Panthéon-Sorbonne · 2026  
-> BOUZIANI Shéhérazade · SYLLA Mourad
+> BOUZIANI Shéhérazade
 
 ---
 
