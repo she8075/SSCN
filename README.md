@@ -173,7 +173,7 @@ The contract includes a protection against under-funded issuance. If the issuer 
 SSCN: insufficient funds to cover issuance
 ```
 
-**Test validated:** contract `0xFEf1047Fc409069EcB340A6FcB5418C6c17e1F9F`, deposit of $1,100 (1 token), attempted issuance of 3 tokens → revert ✅
+**Test validated:** contract `0xFEf1047Fc409069EcB340A6FcB5418C6c17e1F9F`, deposit of $1,100 (1 token), attempted issuance of 3 tokens → revert
 
 ---
 
